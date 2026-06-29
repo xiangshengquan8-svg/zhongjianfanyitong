@@ -7,6 +7,9 @@ import {
   ActivityIndicator,
   ScrollView,
   Animated,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -35,6 +38,8 @@ export default function TranslateScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
   const [historyId, setHistoryId] = useState<number | null>(null);
+  const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
+  const [textInput, setTextInput] = useState('');
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -232,6 +237,62 @@ export default function TranslateScreen() {
     setTargetLang(sourceLang);
     setSourceText(translatedText);
     setTranslatedText(sourceText);
+    setInputMode('voice');
+    setTextInput('');
+  };
+
+  const translateText = async () => {
+    if (!textInput.trim()) {
+      Alert.alert('提示', '请输入要翻译的文字');
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      setSourceText(textInput.trim());
+      setTranslatedText('');
+      setAudioUrl('');
+      setHistoryId(null);
+
+      const headers = await getAuthHeaders();
+      if (!headers['x-session']) return;
+
+      const translateResponse = await fetch(`${API_BASE}/translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        body: JSON.stringify({
+          text: textInput.trim(),
+          sourceLang,
+          targetLang,
+          voiceGender,
+        }),
+      });
+
+      if (translateResponse.status === 401) {
+        router.replace('/login');
+        return;
+      }
+
+      if (!translateResponse.ok) {
+        const errorData = await translateResponse.json();
+        Alert.alert('翻译失败', errorData.error || '翻译失败');
+        setIsTranslating(false);
+        return;
+      }
+
+      const translateData = await translateResponse.json();
+      setTranslatedText(translateData.translatedText);
+      setAudioUrl(translateData.audioUrl || '');
+      setHistoryId(translateData.historyId || null);
+    } catch (err) {
+      console.error('Translate text error:', err);
+      Alert.alert('错误', '翻译失败');
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   if (authLoading) {
@@ -393,28 +454,90 @@ export default function TranslateScreen() {
           )}
         </ScrollView>
 
-        {/* Record Button */}
-        <View style={styles.recordSection}>
-          <Animated.View style={{
-            transform: [{ scale: pulseAnim }],
-          }}>
-            <TouchableOpacity
-              style={[styles.recordButton, isRecording && styles.recordButtonActive]}
-              onPress={isRecording ? stopRecording : startRecording}
-              activeOpacity={0.8}
-              disabled={isTranslating}
-            >
-              <FontAwesome6
-                name={isRecording ? 'stop' : 'microphone'}
-                size={28}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-          </Animated.View>
-          <Text style={styles.recordHint}>
-            {isRecording ? '点击停止录音' : isTranslating ? '处理中...' : '点击开始录音翻译'}
-          </Text>
+        {/* Input Mode Switch */}
+        <View style={styles.inputModeSwitch}>
+          <TouchableOpacity
+            style={[styles.modeButton, inputMode === 'voice' && styles.modeButtonActive]}
+            onPress={() => setInputMode('voice')}
+            activeOpacity={0.7}
+          >
+            <FontAwesome6 name="microphone" size={14} color={inputMode === 'voice' ? '#FFFFFF' : '#64748B'} />
+            <Text style={[styles.modeButtonText, inputMode === 'voice' && styles.modeButtonTextActive]}>
+              语音输入
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeButton, inputMode === 'text' && styles.modeButtonActive]}
+            onPress={() => setInputMode('text')}
+            activeOpacity={0.7}
+          >
+            <FontAwesome6 name="keyboard" size={14} color={inputMode === 'text' ? '#FFFFFF' : '#64748B'} />
+            <Text style={[styles.modeButtonText, inputMode === 'text' && styles.modeButtonTextActive]}>
+              文字输入
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Input Area */}
+        {inputMode === 'voice' ? (
+          <View style={styles.recordSection}>
+            <Animated.View style={{
+              transform: [{ scale: pulseAnim }],
+            }}>
+              <TouchableOpacity
+                style={[styles.recordButton, isRecording && styles.recordButtonActive]}
+                onPress={isRecording ? stopRecording : startRecording}
+                activeOpacity={0.8}
+                disabled={isTranslating}
+              >
+                <FontAwesome6
+                  name={isRecording ? 'stop' : 'microphone'}
+                  size={28}
+                  color="#FFFFFF"
+                />
+              </TouchableOpacity>
+            </Animated.View>
+            <Text style={styles.recordHint}>
+              {isRecording ? '点击停止录音' : isTranslating ? '处理中...' : '点击开始录音翻译'}
+            </Text>
+          </View>
+        ) : (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.textInputSection}
+          >
+            <TextInput
+              style={styles.textInput}
+              placeholder={sourceLang === 'zh' ? '请输入中文...' : 'សូមបញ្ចូលភាសាខ្មែរ...'}
+              placeholderTextColor="#94A3B8"
+              value={textInput}
+              onChangeText={setTextInput}
+              multiline
+              maxLength={500}
+              editable={!isTranslating}
+            />
+            <View style={styles.textInputFooter}>
+              <Text style={styles.charCount}>{textInput.length}/500</Text>
+              <TouchableOpacity
+                style={[styles.translateButton, !textInput.trim() && styles.translateButtonDisabled]}
+                onPress={translateText}
+                disabled={isTranslating || !textInput.trim()}
+                activeOpacity={0.7}
+              >
+                {isTranslating ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.translateButtonText}>翻译</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            {sourceLang === 'km' && (
+              <Text style={styles.kmHint}>
+                高棉语语音识别暂不可用，请使用文字输入
+              </Text>
+            )}
+          </KeyboardAvoidingView>
+        )}
       </View>
     </Screen>
   );
@@ -643,5 +766,83 @@ const styles = {
     marginTop: 10,
     fontSize: 13,
     color: '#64748B',
+  },
+  inputModeSwitch: {
+    flexDirection: 'row' as const,
+    backgroundColor: '#F0F0F5',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 12,
+  },
+  modeButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  modeButtonActive: {
+    backgroundColor: '#5B6AF7',
+  },
+  modeButtonText: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: '#64748B',
+  },
+  modeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  textInputSection: {
+    paddingBottom: 16,
+  },
+  textInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 15,
+    color: '#1E293B',
+    minHeight: 100,
+    maxHeight: 150,
+    textAlignVertical: 'top' as const,
+    shadowColor: '#5B6AF7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  textInputFooter: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  charCount: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  translateButton: {
+    backgroundColor: '#5B6AF7',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 12,
+    minWidth: 80,
+    alignItems: 'center' as const,
+  },
+  translateButtonDisabled: {
+    backgroundColor: '#94A3B8',
+  },
+  translateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  kmHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#E8604C',
+    textAlign: 'center' as const,
   },
 };
