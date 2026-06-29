@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Audio } from 'expo-av';
+import NetInfo from '@react-native-community/netinfo';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
@@ -19,6 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
 import { createFormDataFile } from '@/utils';
 import * as FileSystem from 'expo-file-system/legacy';
+import { translateText, speakOffline, stopSpeaking, checkNetworkConnection } from '@/utils/translation-service';
+import { translateOffline } from '@/utils/offline-dictionary';
 
 const API_BASE = `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1`;
 
@@ -40,10 +43,28 @@ export default function TranslateScreen() {
   const [historyId, setHistoryId] = useState<number | null>(null);
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   const [textInput, setTextInput] = useState('');
+  const [isOffline, setIsOffline] = useState(false);
+  const [lastTranslationOffline, setLastTranslationOffline] = useState(false);
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Network status detection
+  useEffect(() => {
+    const checkNetwork = async () => {
+      const netState = await NetInfo.fetch();
+      setIsOffline(!netState.isConnected || !netState.isInternetReachable);
+    };
+    checkNetwork();
+
+    // Subscribe to network changes
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOffline(!state.isConnected || !state.isInternetReachable);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Auth check
   useEffect(() => {
@@ -241,7 +262,7 @@ export default function TranslateScreen() {
     setTextInput('');
   };
 
-  const translateText = async () => {
+  const handleTextTranslate = async () => {
     if (!textInput.trim()) {
       Alert.alert('提示', '请输入要翻译的文字');
       return;
@@ -253,43 +274,30 @@ export default function TranslateScreen() {
       setTranslatedText('');
       setAudioUrl('');
       setHistoryId(null);
+      setLastTranslationOffline(false);
 
-      const headers = await getAuthHeaders();
-      if (!headers['x-session']) return;
+      // 使用翻译服务（支持离线）
+      const result = await translateText(textInput.trim(), sourceLang, targetLang, voiceGender);
 
-      const translateResponse = await fetch(`${API_BASE}/translate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers,
-        },
-        body: JSON.stringify({
-          text: textInput.trim(),
-          sourceLang,
-          targetLang,
-          voiceGender,
-        }),
-      });
+      setTranslatedText(result.translatedText);
+      setAudioUrl(result.audioUrl || '');
+      setLastTranslationOffline(result.isOffline);
 
-      if (translateResponse.status === 401) {
-        router.replace('/login');
-        return;
+      // 如果是在线模式且有 historyId，保存
+      if (!result.isOffline && result.audioUrl) {
+        // historyId 已在后端保存
       }
-
-      if (!translateResponse.ok) {
-        const errorData = await translateResponse.json();
-        Alert.alert('翻译失败', errorData.error || '翻译失败');
-        setIsTranslating(false);
-        return;
-      }
-
-      const translateData = await translateResponse.json();
-      setTranslatedText(translateData.translatedText);
-      setAudioUrl(translateData.audioUrl || '');
-      setHistoryId(translateData.historyId || null);
     } catch (err) {
       console.error('Translate text error:', err);
-      Alert.alert('错误', '翻译失败');
+      // 尝试离线翻译作为备选
+      const offlineResult = translateOffline(textInput.trim(), sourceLang, targetLang);
+      if (offlineResult) {
+        setTranslatedText(offlineResult);
+        setLastTranslationOffline(true);
+        Alert.alert('离线模式', '网络不可用，已使用离线词典翻译');
+      } else {
+        Alert.alert('错误', '翻译失败，且离线词典无匹配');
+      }
     } finally {
       setIsTranslating(false);
     }
@@ -313,6 +321,12 @@ export default function TranslateScreen() {
           <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>语音翻译通</Text>
             <Text style={styles.headerSubtitle}>中文 · 高棉语</Text>
+            {isOffline && (
+              <View style={styles.offlineBadge}>
+                <FontAwesome6 name="wifi" size={10} color="#E8604C" />
+                <Text style={styles.offlineBadgeText}>离线模式</Text>
+              </View>
+            )}
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -520,7 +534,7 @@ export default function TranslateScreen() {
               <Text style={styles.charCount}>{textInput.length}/500</Text>
               <TouchableOpacity
                 style={[styles.translateButton, !textInput.trim() && styles.translateButtonDisabled]}
-                onPress={translateText}
+                onPress={handleTextTranslate}
                 disabled={isTranslating || !textInput.trim()}
                 activeOpacity={0.7}
               >
@@ -570,6 +584,22 @@ const styles = {
     fontSize: 13,
     color: '#64748B',
     marginTop: 2,
+  },
+  offlineBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: '#E8604C15',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 4,
+    gap: 4,
+    alignSelf: 'flex-start' as const,
+  },
+  offlineBadgeText: {
+    fontSize: 10,
+    color: '#E8604C',
+    fontWeight: '600' as const,
   },
   headerRight: {
     flexDirection: 'row' as const,
