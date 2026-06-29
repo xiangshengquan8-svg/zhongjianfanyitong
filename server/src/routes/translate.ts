@@ -10,6 +10,30 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
+// Auth middleware
+async function verifyAuth(req: any, res: Response, next: any) {
+  const token = req.headers['x-session'];
+  if (!token) {
+    return res.status(401).json({ error: '请先登录' });
+  }
+  const client = getSupabaseClient(token);
+  const { data: { user }, error: authError } = await client.auth.getUser();
+  if (authError || !user) {
+    return res.status(401).json({ error: '认证失败' });
+  }
+  req.userId = user.id;
+  next();
+}
+
+// TTS speaker mapping by language and gender
+function getSpeaker(lang: string, gender: string): string {
+  if (lang === 'zh') {
+    return gender === 'male' ? 'zh_male_shaonian_uranus_bigtts' : 'zh_female_xiaohe_uranus_bigtts';
+  }
+  // For Khmer, use Chinese speakers as fallback (TTS service limitation)
+  return gender === 'male' ? 'zh_male_shaonian_uranus_bigtts' : 'zh_female_xiaohe_uranus_bigtts';
+}
+
 /**
  * POST /api/v1/translate/asr
  * Upload audio file and perform speech recognition
@@ -46,12 +70,12 @@ router.post('/asr', upload.single('file'), async (req: Request, res: Response) =
 /**
  * POST /api/v1/translate
  * Translate text between Chinese and Khmer
- * Body: { text: string, sourceLang: 'zh' | 'km', targetLang: 'zh' | 'km' }
+ * Body: { text: string, sourceLang: 'zh' | 'km', targetLang: 'zh' | 'km', voiceGender?: 'male' | 'female' }
  * Returns: { translatedText: string, audioUrl: string, historyId: number }
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', verifyAuth, async (req: any, res: Response) => {
   try {
-    const { text, sourceLang, targetLang } = req.body;
+    const { text, sourceLang, targetLang, voiceGender = 'female' } = req.body;
 
     if (!text || !sourceLang || !targetLang) {
       return res.status(400).json({ error: '缺少必要参数' });
@@ -69,7 +93,7 @@ router.post('/', async (req: Request, res: Response) => {
     const messages = [
       {
         role: 'system' as const,
-        content: `你是一位专业的${sourceLangName}和${targetLangName}翻译专家。请将用户输入的${sourceLangName}文本准确翻译为${targetLangName}。只输出翻译结果，不要添加任何解释、注释或额外内容。如果输入文本已经是目标语言，则直接返回原文。`,
+        content: `你是一位专业的${sourceLangName}和${targetLangName}翻译专家。请将用户输入的${sourceLangName}文本准确翻译为${targetLangName}。翻译要通俗易懂、自然流畅，符合目标语言的日常表达习惯。只输出翻译结果，不要添加任何解释、注释或额外内容。如果输入文本已经是目标语言，则直接返回原文。`,
       },
       {
         role: 'user' as const,
@@ -86,10 +110,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Step 2: Convert translated text to speech using TTS
     const ttsClient = new TTSClient(config, customHeaders);
-
-    const speaker = targetLang === 'zh'
-      ? 'zh_female_xiaohe_uranus_bigtts'
-      : 'zh_female_vv_uranus_bigtts';
+    const speaker = getSpeaker(targetLang, voiceGender);
 
     let audioUrl = '';
     try {
@@ -101,19 +122,19 @@ router.post('/', async (req: Request, res: Response) => {
         sampleRate: 24000,
       });
       audioUrl = ttsResponse.audioUri || '';
-      console.log('TTS Response:', JSON.stringify(ttsResponse));
     } catch (ttsError) {
       console.error('TTS synthesis failed:', ttsError);
       // TTS failure is not critical, continue without audio
     }
 
-    // Step 3: Save to history
+    // Step 3: Save to history with user_id
     let historyId: number | null = null;
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('translation_history')
         .insert({
+          user_id: req.userId,
           source_lang: sourceLang,
           target_lang: targetLang,
           source_text: text,
@@ -143,12 +164,12 @@ router.post('/', async (req: Request, res: Response) => {
 /**
  * POST /api/v1/translate/tts
  * Convert text to speech
- * Body: { text: string, lang: 'zh' | 'km' }
+ * Body: { text: string, lang: 'zh' | 'km', gender?: 'male' | 'female' }
  * Returns: { audioUrl: string }
  */
 router.post('/tts', async (req: Request, res: Response) => {
   try {
-    const { text, lang } = req.body;
+    const { text, lang, gender = 'female' } = req.body;
 
     if (!text) {
       return res.status(400).json({ error: '缺少文本内容' });
@@ -158,9 +179,7 @@ router.post('/tts', async (req: Request, res: Response) => {
     const config = new Config();
     const ttsClient = new TTSClient(config, customHeaders);
 
-    const speaker = lang === 'zh'
-      ? 'zh_female_xiaohe_uranus_bigtts'
-      : 'zh_female_vv_uranus_bigtts';
+    const speaker = getSpeaker(lang, gender);
 
     const response = await ttsClient.synthesize({
       uid: 'translator-user',
@@ -179,11 +198,11 @@ router.post('/tts', async (req: Request, res: Response) => {
 
 /**
  * GET /api/v1/translate/history
- * Get translation history
+ * Get translation history (requires auth)
  * Query: { page?: number, limit?: number }
  * Returns: { items: TranslationItem[], total: number }
  */
-router.get('/history', async (req: Request, res: Response) => {
+router.get('/history', verifyAuth, async (req: any, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
@@ -191,16 +210,18 @@ router.get('/history', async (req: Request, res: Response) => {
 
     const supabase = getSupabaseClient();
 
-    // Get total count
+    // Get total count for this user
     const { count, error: countError } = await supabase
       .from('translation_history')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', req.userId);
     if (countError) throw new Error(`统计失败: ${countError.message}`);
 
-    // Get paginated items
+    // Get paginated items for this user
     const { data, error } = await supabase
       .from('translation_history')
       .select('id, source_lang, target_lang, source_text, translated_text, audio_url, created_at')
+      .eq('user_id', req.userId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -220,10 +241,10 @@ router.get('/history', async (req: Request, res: Response) => {
 
 /**
  * DELETE /api/v1/translate/history/:id
- * Delete a translation history item
+ * Delete a translation history item (requires auth)
  * Params: id (number)
  */
-router.delete('/history/:id', async (req: Request, res: Response) => {
+router.delete('/history/:id', verifyAuth, async (req: any, res: Response) => {
   try {
     const { id } = req.params;
     const supabase = getSupabaseClient();
@@ -231,7 +252,8 @@ router.delete('/history/:id', async (req: Request, res: Response) => {
     const { error } = await supabase
       .from('translation_history')
       .delete()
-      .eq('id', parseInt(id as string));
+      .eq('id', parseInt(id as string))
+      .eq('user_id', req.userId);
 
     if (error) throw new Error(`删除失败: ${error.message}`);
 

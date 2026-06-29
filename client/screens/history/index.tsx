@@ -3,17 +3,17 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
+import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
 
-const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
+const API_BASE = `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1`;
 
 interface TranslationItem {
   id: number;
@@ -30,7 +30,15 @@ const LANG_LABELS: Record<string, string> = {
   km: '高棉语',
 };
 
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const supabase = await getSupabaseBrowserClientWithRetry();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return {};
+  return { 'x-session': session.access_token };
+};
+
 export default function HistoryScreen() {
+  const router = useSafeRouter();
   const [items, setItems] = useState<TranslationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,31 +57,32 @@ export default function HistoryScreen() {
       /**
        * 服务端文件：server/src/routes/translate.ts
        * 接口：GET /api/v1/translate/history
-       * Query 参数：page?: number, limit?: number
+       * Query 参数：page: number, limit: number
+       * 需要 Header：x-session (access_token)
        */
+      const headers = await getAuthHeaders();
       const response = await fetch(
-        `${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/translate/history?page=${pageNum}&limit=20`
+        `${API_BASE}/translate/history?page=${pageNum}&limit=20`,
+        { headers }
       );
 
-      if (!response.ok) {
-        throw new Error('获取历史记录失败');
+      if (response.status === 401) {
+        router.replace('/login');
+        return;
       }
 
       const data = await response.json();
+      const newItems = data.items || [];
 
-      if (isRefresh) {
-        setItems(data.items);
+      if (pageNum === 1) {
+        setItems(newItems);
       } else {
-        setItems(prev => [...prev, ...data.items]);
+        setItems(prev => [...prev, ...newItems]);
       }
 
-      setHasMore(data.items.length >= 20);
-      setPage(pageNum);
+      setHasMore(newItems.length >= 20);
     } catch (error) {
       console.error('Fetch history error:', error);
-      if (pageNum === 1) {
-        Alert.alert('错误', '获取翻译历史失败');
-      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -83,21 +92,25 @@ export default function HistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchHistory(1, true);
+      fetchHistory(1);
     }, [fetchHistory])
   );
 
-  const onRefresh = () => {
+  const handleRefresh = () => {
     setRefreshing(true);
+    setPage(1);
+    setHasMore(true);
     fetchHistory(1, true);
   };
 
-  const loadMore = () => {
+  const handleLoadMore = () => {
     if (!hasMore || loadingMore) return;
-    fetchHistory(page + 1);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchHistory(nextPage);
   };
 
-  const deleteItem = async (id: number) => {
+  const handleDelete = (id: number) => {
     Alert.alert('确认删除', '确定要删除这条翻译记录吗？', [
       { text: '取消', style: 'cancel' },
       {
@@ -109,88 +122,61 @@ export default function HistoryScreen() {
              * 服务端文件：server/src/routes/translate.ts
              * 接口：DELETE /api/v1/translate/history/:id
              * Path 参数：id: number
+             * 需要 Header：x-session (access_token)
              */
-            const response = await fetch(
-              `${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/translate/history/${id}`,
-              { method: 'DELETE' }
-            );
-
-            if (!response.ok) {
-              throw new Error('删除失败');
-            }
-
+            const headers = await getAuthHeaders();
+            await fetch(`${API_BASE}/translate/history/${id}`, {
+              method: 'DELETE',
+              headers,
+            });
             setItems(prev => prev.filter(item => item.id !== id));
           } catch (error) {
             console.error('Delete error:', error);
-            Alert.alert('错误', '删除失败，请重试');
           }
         },
       },
     ]);
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return '刚刚';
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
-    if (diffDays < 7) return `${diffDays}天前`;
-    return `${date.getMonth() + 1}月${date.getDate()}日`;
-  };
-
-  const renderItem = useCallback(({ item }: { item: TranslationItem }) => (
+  const renderItem = ({ item }: { item: TranslationItem }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <View style={styles.langDirection}>
-          <Text style={styles.langTag}>{LANG_LABELS[item.source_lang]}</Text>
-          <FontAwesome6 name="arrow-right" size={10} color="#94A3B8" style={styles.arrow} />
-          <Text style={styles.langTag}>{LANG_LABELS[item.target_lang]}</Text>
+        <View style={styles.langPair}>
+          <Text style={styles.langText}>{LANG_LABELS[item.source_lang] || item.source_lang}</Text>
+          <FontAwesome6 name="arrow-right" size={10} color="#94A3B8" />
+          <Text style={styles.langText}>{LANG_LABELS[item.target_lang] || item.target_lang}</Text>
         </View>
-        <View style={styles.cardHeaderRight}>
-          <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
-          <TouchableOpacity
-            onPress={() => deleteItem(item.id)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <FontAwesome6 name="trash-can" size={14} color="#CBD5E1" />
+        <View style={styles.cardActions}>
+          <Text style={styles.timeText}>
+            {new Date(item.created_at).toLocaleString('zh-CN', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+          <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
+            <FontAwesome6 name="trash-can" size={14} color="#EF4444" />
           </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.textSection}>
+      <View style={styles.cardBody}>
         <Text style={styles.sourceText} numberOfLines={2}>{item.source_text}</Text>
+        <FontAwesome6 name="arrow-down" size={10} color="#CBD5E1" style={styles.arrowIcon} />
         <Text style={styles.translatedText} numberOfLines={2}>{item.translated_text}</Text>
       </View>
     </View>
-  ), []);
+  );
 
-  const renderEmpty = () => {
-    if (loading) return null;
+  if (loading) {
     return (
-      <View style={styles.emptyContainer}>
-        <View style={styles.emptyIconContainer}>
-          <FontAwesome6 name="clock-rotate-left" size={32} color="#CBD5E1" />
+      <Screen>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#5B6AF7" />
         </View>
-        <Text style={styles.emptyText}>暂无翻译记录</Text>
-        <Text style={styles.emptySubtext}>完成翻译后，记录会自动保存在这里</Text>
-      </View>
+      </Screen>
     );
-  };
-
-  const renderFooter = () => {
-    if (!loadingMore) return null;
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator size="small" color="#5B6AF7" />
-      </View>
-    );
-  };
+  }
 
   return (
     <Screen>
@@ -198,26 +184,33 @@ export default function HistoryScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>翻译历史</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <FontAwesome6 name="chevron-left" size={18} color="#5B6AF7" />
+          </TouchableOpacity>
         </View>
 
-        {/* Content */}
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#5B6AF7" />
+        {items.length === 0 ? (
+          <View style={styles.emptyState}>
+            <FontAwesome6 name="clock-rotate-left" size={48} color="#CBD5E1" />
+            <Text style={styles.emptyText}>暂无翻译记录</Text>
           </View>
         ) : (
           <FlatList
             data={items}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
+            keyExtractor={item => item.id.toString()}
+            onRefresh={handleRefresh}
             refreshing={refreshing}
-            onRefresh={onRefresh}
-            onEndReached={loadMore}
+            onEndReached={handleLoadMore}
             onEndReachedThreshold={0.3}
-            ListEmptyComponent={renderEmpty}
-            ListFooterComponent={renderFooter}
+            contentContainerStyle={styles.listContent}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={styles.footer}>
+                  <ActivityIndicator size="small" color="#5B6AF7" />
+                </View>
+              ) : null
+            }
           />
         )}
       </View>
@@ -225,119 +218,108 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
     flex: 1,
-    backgroundColor: '#F0F0F5',
+    paddingHorizontal: 20,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'web' ? 20 : 8,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    paddingTop: 8,
     paddingBottom: 16,
-    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700' as const,
     color: '#1E293B',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#5B6AF710',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
-
-  // Card
   card: {
-    backgroundColor: '#F0F0F5',
-    borderRadius: 20,
-    padding: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
-    shadowColor: '#D1D9E6',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
     shadowRadius: 6,
-    elevation: 4,
+    elevation: 1,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
     marginBottom: 12,
   },
-  langDirection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  langPair: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
   },
-  langTag: {
-    fontSize: 11,
-    fontWeight: '700',
+  langText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
     color: '#5B6AF7',
-    backgroundColor: 'rgba(91,106,247,0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
   },
-  arrow: {
-    marginHorizontal: 8,
+  cardActions: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
   },
-  cardHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dateText: {
+  timeText: {
     fontSize: 11,
     color: '#94A3B8',
-    marginRight: 12,
   },
-  textSection: {
-    gap: 8,
+  deleteBtn: {
+    padding: 4,
+  },
+  cardBody: {
+    gap: 6,
   },
   sourceText: {
-    fontSize: 14,
-    color: '#64748B',
-    lineHeight: 20,
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 22,
+  },
+  arrowIcon: {
+    alignSelf: 'center' as const,
+    marginVertical: 2,
   },
   translatedText: {
     fontSize: 15,
-    fontWeight: '600',
     color: '#1E293B',
+    fontWeight: '500' as const,
     lineHeight: 22,
   },
-
-  // Empty
-  emptyContainer: {
-    alignItems: 'center',
-    paddingTop: 80,
-  },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(203,213,225,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    gap: 12,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#94A3B8',
-    textAlign: 'center',
   },
-
-  // Footer
   footer: {
-    paddingVertical: 20,
-    alignItems: 'center',
+    paddingVertical: 16,
+    alignItems: 'center' as const,
   },
-});
+};
