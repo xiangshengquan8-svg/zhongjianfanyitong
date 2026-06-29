@@ -99,7 +99,7 @@ export default function LoginScreen() {
               }}
               style={styles.appIcon}
             />
-            <Text style={styles.appName}>语音翻译通</Text>
+            <Text style={styles.appName}>中柬翻译通</Text>
             <Text style={styles.appSubtitle}>中文 · 高棉语 实时翻译</Text>
           </View>
 

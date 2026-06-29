@@ -319,7 +319,7 @@ export default function TranslateScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>语音翻译通</Text>
+            <Text style={styles.headerTitle}>中柬翻译通</Text>
             <Text style={styles.headerSubtitle}>中文 · 高棉语</Text>
             {isOffline && (
               <View style={styles.offlineBadge}>
