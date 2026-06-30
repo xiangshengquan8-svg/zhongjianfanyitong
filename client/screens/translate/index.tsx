@@ -372,7 +372,7 @@ export default function TranslateScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.langButtonText, sourceLang === 'zh' && styles.langButtonTextActive]}>
-              中文
+              中文 / ភាសាចិន
             </Text>
           </TouchableOpacity>
 
@@ -386,7 +386,7 @@ export default function TranslateScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.langButtonText, sourceLang === 'km' && styles.langButtonTextActive]}>
-              高棉语
+              高棉语 / ភាសាខ្មែរ
             </Text>
           </TouchableOpacity>
         </View>
@@ -467,7 +467,7 @@ export default function TranslateScreen() {
           >
             <FontAwesome6 name="microphone" size={14} color={inputMode === 'voice' ? '#FFFFFF' : '#64748B'} />
             <Text style={[styles.modeButtonText, inputMode === 'voice' && styles.modeButtonTextActive]}>
-              {t('voice_input')}
+              {t('voice_input')} / បញ្ចូលសំឡេង
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -477,7 +477,7 @@ export default function TranslateScreen() {
           >
             <FontAwesome6 name="keyboard" size={14} color={inputMode === 'text' ? '#FFFFFF' : '#64748B'} />
             <Text style={[styles.modeButtonText, inputMode === 'text' && styles.modeButtonTextActive]}>
-              {t('text_input')}
+              {t('text_input')} / បញ្ចូលអត្ថបទ
             </Text>
           </TouchableOpacity>
         </View>
@@ -502,7 +502,7 @@ export default function TranslateScreen() {
               </TouchableOpacity>
             </Animated.View>
             <Text style={styles.recordHint}>
-              {isRecording ? t('release_to_stop') : isTranslating ? t('loading') : t('tap_to_speak')}
+              {isRecording ? `${t('release_to_stop')} / លែងដើម្បីបញ្ឈប់` : isTranslating ? `${t('loading')} / កំពុងផ្ទុក...` : `${t('tap_to_speak')} / ចុចដើម្បីនិយាយ`}
             </Text>
           </View>
         ) : (
