@@ -467,15 +467,15 @@ export default function TranslateScreen() {
         {/* Input Area - Voice Mode */}
         {inputMode === 'voice' ? (
           <View style={styles.voiceInputContainer}>
-            {/* Left: Voice Input Button */}
+            {/* Left: Voice Input Button (Active - Warm Coral) */}
             <TouchableOpacity
-              style={[styles.sideModeButton, styles.modeButtonActive]}
+              style={[styles.sideModeButton, styles.voiceModeButton, styles.voiceModeActive]}
               onPress={() => setInputMode('voice')}
               activeOpacity={0.7}
             >
-              <FontAwesome6 name="microphone" size={16} color="#FFFFFF" />
-              <Text style={styles.sideModeButtonText}>语音</Text>
-              <Text style={styles.sideModeSubText}>សំឡេង</Text>
+              <FontAwesome6 name="microphone" size={20} color="#FFFFFF" />
+              <Text style={[styles.sideModeButtonText, styles.modeButtonTextActive]}>语音</Text>
+              <Text style={[styles.sideModeSubText, styles.modeSubTextActive]}>សំឡេង</Text>
             </TouchableOpacity>
 
             {/* Center: Record Button */}
@@ -504,53 +504,75 @@ export default function TranslateScreen() {
               </Text>
             </View>
 
-            {/* Right: Text Input Button */}
+            {/* Right: Text Input Button (Inactive - Teal Green Border) */}
             <TouchableOpacity
-              style={styles.sideModeButton}
+              style={[styles.sideModeButton, styles.textModeButton]}
               onPress={() => setInputMode('text')}
               activeOpacity={0.7}
             >
-              <FontAwesome6 name="keyboard" size={16} color="#64748B" />
+              <FontAwesome6 name="keyboard" size={20} color="#10B981" />
               <Text style={styles.sideModeButtonText}>文字</Text>
               <Text style={styles.sideModeSubText}>អត្ថបទ</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.textInputSection}
-          >
-            <TextInput
-              style={styles.textInput}
-              placeholder={sourceLang === 'zh' ? t('placeholder_source') : t('placeholder_target')}
-              placeholderTextColor="#94A3B8"
-              value={textInput}
-              onChangeText={setTextInput}
-              multiline
-              maxLength={500}
-              editable={!isTranslating}
-            />
-            <View style={styles.textInputFooter}>
-              <Text style={styles.charCount}>{textInput.length}/500</Text>
+          <>
+            <View style={styles.sideModeContainer}>
               <TouchableOpacity
-                style={[styles.translateButton, !textInput.trim() && styles.translateButtonDisabled]}
-                onPress={handleTextTranslate}
-                disabled={isTranslating || !textInput.trim()}
+                style={styles.sideModeButtonVoice}
+                onPress={() => setInputMode('voice')}
                 activeOpacity={0.7}
               >
-                {isTranslating ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.translateButtonText}>{t('translate')}</Text>
-                )}
+                <FontAwesome6 name="microphone" size={20} color="#10B981" />
+                <Text style={styles.sideModeButtonTextVoice}>语音</Text>
+                <Text style={styles.sideModeSubTextVoice}>សំឡេង</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sideModeButtonTextActive}
+                onPress={() => {}}
+                activeOpacity={0.7}
+              >
+                <FontAwesome6 name="keyboard" size={20} color="#FFFFFF" />
+                <Text style={styles.sideModeButtonText}>文字</Text>
+                <Text style={styles.sideModeSubText}>អត្ថបទ</Text>
               </TouchableOpacity>
             </View>
-            {sourceLang === 'km' && (
-              <Text style={styles.kmHint}>
-                {t('tts_hint')}
-              </Text>
-            )}
-          </KeyboardAvoidingView>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.textInputSection}
+            >
+              <TextInput
+                style={styles.textInput}
+                placeholder={sourceLang === 'zh' ? t('placeholder_source') : t('placeholder_target')}
+                placeholderTextColor="#94A3B8"
+                value={textInput}
+                onChangeText={setTextInput}
+                multiline
+                maxLength={500}
+                editable={!isTranslating}
+              />
+              <View style={styles.textInputFooter}>
+                <Text style={styles.charCount}>{textInput.length}/500</Text>
+                <TouchableOpacity
+                  style={[styles.translateButton, !textInput.trim() && styles.translateButtonDisabled]}
+                  onPress={handleTextTranslate}
+                  disabled={isTranslating || !textInput.trim()}
+                  activeOpacity={0.7}
+                >
+                  {isTranslating ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.translateButtonText}>{t('translate')}</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {sourceLang === 'km' && (
+                <Text style={styles.kmHint}>
+                  {t('tts_hint')}
+                </Text>
+              )}
+            </KeyboardAvoidingView>
+          </>
         )}
       </View>
     </Screen>
@@ -787,6 +809,30 @@ const styles = {
     fontSize: 14,
     color: '#64748B',
   },
+  // Side mode container for text input mode
+  sideModeContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  sideModeButtonActive: {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
   // Voice input container - horizontal layout with buttons on sides
   voiceInputContainer: {
     flexDirection: 'row' as const,
@@ -794,8 +840,9 @@ const styles = {
     justifyContent: 'space-between' as const,
     paddingVertical: 16,
     paddingHorizontal: 12,
+    gap: 8,
   },
-  // Side mode buttons (voice/text) - vibrant and friendly design
+  // Side mode buttons (voice/text) - vibrant multi-color design
   sideModeButton: {
     width: 85,
     alignItems: 'center' as const,
@@ -804,42 +851,104 @@ const styles = {
     paddingHorizontal: 10,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderWidth: 2,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  // Voice input button - warm coral color
+  voiceModeButton: {
+    borderColor: '#FF6B6B',
+    backgroundColor: '#FFF5F5',
+  },
+  // Text input button - teal green color
+  textModeButton: {
+    borderColor: '#10B981',
+    backgroundColor: '#F0FDF4',
   },
   sideModeButtonText: {
-    fontSize: 13,
-    color: '#334155',
+    fontSize: 14,
+    color: '#1E293B',
     marginTop: 6,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
   },
   sideModeSubText: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#475569',
     marginTop: 2,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
-  modeButtonActive: {
-    backgroundColor: '#5B6AF7',
-    borderColor: '#5B6AF7',
-    shadowColor: '#5B6AF7',
+  // Text mode active button styles
+  sideModeButtonVoice: {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  sideModeButtonTextVoice: {
+    fontSize: 14,
+    color: '#10B981',
+    marginTop: 6,
+    fontWeight: '700' as const,
+  },
+  sideModeSubTextVoice: {
+    fontSize: 11,
+    color: '#059669',
+    marginTop: 2,
+    fontWeight: '600' as const,
+  },
+  sideModeButtonTextActive: {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: '#6366F1',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  // Voice mode active - warm coral
+  voiceModeActive: {
+    backgroundColor: '#FF6B6B',
+    borderColor: '#FF6B6B',
+    shadowColor: '#FF6B6B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  // Text mode active - teal green
+  textModeActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
     elevation: 6,
   },
   modeButtonTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700' as const,
+    fontWeight: '800' as const,
   },
   modeSubTextActive: {
-    color: '#FFE5DD',
-    fontWeight: '500' as const,
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
+    opacity: 0.9,
   },
   // Center record button area
   recordCenter: {
