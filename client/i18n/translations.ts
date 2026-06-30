@@ -1,0 +1,156 @@
+// 中文语言包
+export const zh = {
+  // 通用
+  app_name: '中柬翻译通',
+  confirm: '确认',
+  cancel: '取消',
+  save: '保存',
+  delete: '删除',
+  edit: '编辑',
+  close: '关闭',
+  loading: '加载中...',
+  error: '错误',
+  success: '成功',
+  
+  // 翻译页面
+  translate_title: '中柬翻译通',
+  translate_subtitle: '中文 ⇋ 高棉文实时翻译',
+  source_lang: '中文',
+  target_lang: '高棉文',
+  swap_lang: '切换语言',
+  tap_to_speak: '点击说话',
+  recording: '录音中...',
+  release_to_stop: '松开结束',
+  text_input: '文字输入',
+  voice_input: '语音输入',
+  placeholder_source: '请输入要翻译的中文...',
+  placeholder_target: 'សូមបញ្ចូលអត្ថបទជាភាសាខ្មែរ...',
+  translate: '翻译',
+  play_translation: '播放翻译',
+  offline_mode: '离线模式',
+  online_mode: '在线模式',
+  tts_hint: '高棉语暂不支持语音播放',
+  
+  // 登录页面
+  login_title: '欢迎使用中柬翻译通',
+  login_subtitle: '登录后享受完整翻译服务',
+  email: '邮箱',
+  password: '密码',
+  login: '登录',
+  register: '注册',
+  logout: '退出登录',
+  no_account: '没有账号？',
+  has_account: '已有账号？',
+  email_placeholder: '请输入邮箱',
+  password_placeholder: '请输入密码',
+  confirm_password_placeholder: '请确认密码',
+  go_register: '去注册',
+  go_login: '去登录',
+  
+  // 历史页面
+  history_title: '翻译历史',
+  history_empty: '暂无翻译记录',
+  history_delete_confirm: '确定删除这条记录吗？',
+  
+  // 订阅页面
+  subscription_title: '会员服务',
+  free_trial: '免费试用',
+  trial_days: '您还有 {days} 天免费试用',
+  trial_expired: '免费试用已到期',
+  monthly: '月付',
+  yearly: '年付',
+  monthly_price: '¥10/月',
+  yearly_price: '¥60/年',
+  yearly_discount: '折合¥5/月',
+  subscribe: '立即订阅',
+  current_plan: '当前套餐',
+  
+  // 设置页面
+  settings_title: '设置',
+  settings_language: '界面语言',
+  settings_theme: '主题模式',
+  settings_about: '关于我们',
+  settings_privacy: '隐私政策',
+  settings_terms: '用户协议',
+  settings_version: '版本',
+};
+
+// 高棉语语言包
+export const km = {
+  // 通用
+  app_name: 'កម្មវិធីបកប្រែចិន-ខ្មែរ',
+  confirm: 'បញ្ជាក់',
+  cancel: 'បោះបង់',
+  save: 'រក្សាទុក',
+  delete: 'លុប',
+  edit: 'កែសម្រួល',
+  close: 'បិទ',
+  loading: 'កំពុងផ្ទុក...',
+  error: 'កំហុស',
+  success: 'ជោគជ័យ',
+  
+  // 翻译页面
+  translate_title: 'កម្មវិធីបកប្រែចិន-ខ្មែរ',
+  translate_subtitle: 'បកប្រែភាសាចិន ⇋ ខ្មែរភ្លាមៗ',
+  source_lang: 'ភាសាចិន',
+  target_lang: 'ភាសាខ្មែរ',
+  swap_lang: 'ប្តូរភាសា',
+  tap_to_speak: 'ចុចដើម្បីនិយាយ',
+  recording: 'កំពុងថត...',
+  release_to_stop: 'ដោះលែងដើម្បីបញ្ឈប់',
+  text_input: 'បញ្ចូលអត្ថបទ',
+  voice_input: 'បញ្ចូលសំឡេង',
+  placeholder_source: 'សូមបញ្ចូលអត្ថបទជាភាសាចិន...',
+  placeholder_target: 'សូមបញ្ចូលអត្ថបទជាភាសាខ្មែរ...',
+  translate: 'បកប្រែ',
+  play_translation: 'ចាក់សំឡេងបកប្រែ',
+  offline_mode: 'របៀបគ្មានអ៊ីនធឺណិត',
+  online_mode: 'របៀបអនឡាញ',
+  tts_hint: 'ភាសាខ្មែរមិនគាំទ្រការចាក់សំឡេងទេ',
+  
+  // 登录页面
+  login_title: 'សូមស្វាគមន៍មកកាន់កម្មវិធីបកប្រែចិន-ខ្មែរ',
+  login_subtitle: 'ចូលគណនីដើម្បីប្រើសេវាបកប្រែពេញលេញ',
+  email: 'អ៊ីមែល',
+  password: 'ពាក្យសម្ងាត់',
+  login: 'ចូលគណនី',
+  register: 'ចុះឈ្មោះ',
+  logout: 'ចាកចេញ',
+  no_account: 'មិនមានគណនី?',
+  has_account: 'មានគណនីហើយ?',
+  email_placeholder: 'សូមបញ្ចូលអ៊ីមែល',
+  password_placeholder: 'សូមបញ្ចូលពាក្យសម្ងាត់',
+  confirm_password_placeholder: 'សូមបញ្ជាក់ពាក្យសម្ងាត់',
+  go_register: 'ទៅចុះឈ្មោះ',
+  go_login: 'ទៅចូលគណនី',
+  
+  // 历史页面
+  history_title: 'ប្រវត្តិបកប្រែ',
+  history_empty: 'មិនមានកំណត់ត្រាបកប្រែទេ',
+  history_delete_confirm: 'តើអ្នកប្រាកដជាចង់លុបកំណត់ត្រានេះ吗?',
+  
+  // 订阅页面
+  subscription_title: 'សេវាសមាជិក',
+  free_trial: 'សាកល្បងឥតគិតថ្លៃ',
+  trial_days: 'អ្នកនៅសល់ {days} ថ្ងៃសាកល្បងឥតគិតថ្លៃ',
+  trial_expired: 'ការសាកល្បងឥតគិតថ្លៃបានផុតកំណត់',
+  monthly: 'ប្រចាំខែ',
+  yearly: 'ប្រចាំឆ្នាំ',
+  monthly_price: '¥10/ខែ',
+  yearly_price: '¥60/ឆ្នាំ',
+  yearly_discount: 'ស្មើ ¥5/ខែ',
+  subscribe: 'ចុះឈ្មោះឥឡូវ',
+  current_plan: 'កញ្ចប់បច្ចុប្បន្ន',
+  
+  // 设置页面
+  settings_title: 'ការកំណត់',
+  settings_language: 'ភាសាចំណុចប្រទាក់',
+  settings_theme: 'របៀបរូបរាង',
+  settings_about: 'អំពីយើង',
+  settings_privacy: 'គោលការណ៍ឯកជនភាព',
+  settings_terms: 'កិច្ចព្រមព្រៀងអ្នកប្រើ',
+  settings_version: 'កំណែ',
+};
+
+export type Language = 'zh' | 'km';
+export type TranslationKey = keyof typeof zh;

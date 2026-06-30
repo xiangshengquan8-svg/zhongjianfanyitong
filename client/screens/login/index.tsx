@@ -15,11 +15,13 @@ import { Screen } from '@/components/Screen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useSupabaseConfig } from '@/lib/supabase-config-inject';
+import { useI18n } from '@/i18n/I18nContext';
 
 export default function LoginScreen() {
   const { isLoading: configLoading, error: configError } = useSupabaseConfig();
   const { signInWithEmail, signUpWithEmail, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useSafeRouter();
+  const { t, language, setLanguage } = useI18n();
 
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -37,7 +39,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setError('请填写邮箱和密码');
+      setError(language === 'zh' ? '请填写邮箱和密码' : 'សូមបញ្ចូលអ៊ីមែលនិងពាក្យសម្ងាត់');
       return;
     }
     setError('');
@@ -45,21 +47,21 @@ export default function LoginScreen() {
     const { error } = await signInWithEmail(email.trim(), password);
     setLoading(false);
     if (error) {
-      setError('邮箱或密码错误');
+      setError(language === 'zh' ? '邮箱或密码错误' : 'អ៊ីមែលឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ');
     }
   };
 
   const handleRegister = async () => {
     if (!email.trim() || !password.trim()) {
-      setError('请填写邮箱和密码');
+      setError(language === 'zh' ? '请填写邮箱和密码' : 'សូមបញ្ចូលអ៊ីមែលនិងពាក្យសម្ងាត់');
       return;
     }
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致');
+      setError(language === 'zh' ? '两次输入的密码不一致' : 'ពាក្យសម្ងាត់ទាំងពីរមិនដូចគ្នា');
       return;
     }
     if (password.length < 6) {
-      setError('密码至少6位');
+      setError(language === 'zh' ? '密码至少6位' : 'ពាក្យសម្ងាត់យ៉ាងហោចណាស់ ៦ តួ');
       return;
     }
     setError('');
@@ -67,7 +69,9 @@ export default function LoginScreen() {
     const { error } = await signUpWithEmail(email.trim(), password);
     setLoading(false);
     if (error) {
-      setError(error.includes('already') ? '该邮箱已注册' : '注册失败，请重试');
+      setError(error.includes('already') 
+        ? (language === 'zh' ? '该邮箱已注册' : 'អ៊ីមែលនេះបានចុះឈ្មោះរួចហើយ') 
+        : (language === 'zh' ? '注册失败，请重试' : 'ការចុះឈ្មោះបរាជ័យ សូមព្យាយាមម្តងទៀត'));
     }
   };
 
@@ -99,13 +103,29 @@ export default function LoginScreen() {
               }}
               style={styles.appIcon}
             />
-            <Text style={styles.appName}>中柬翻译通</Text>
-            <Text style={styles.appSubtitle}>中文 · 高棉语 实时翻译</Text>
+            <Text style={styles.appName}>{t('app_name')}</Text>
+            <Text style={styles.appSubtitle}>{t('translate_subtitle')}</Text>
+          </View>
+
+          {/* Language Switch */}
+          <View style={styles.langSwitchContainer}>
+            <TouchableOpacity
+              style={[styles.langButton, language === 'zh' && styles.langButtonActive]}
+              onPress={() => setLanguage('zh')}
+            >
+              <Text style={[styles.langButtonText, language === 'zh' && styles.langButtonTextActive]}>中文</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.langButton, language === 'km' && styles.langButtonActive]}
+              onPress={() => setLanguage('km')}
+            >
+              <Text style={[styles.langButtonText, language === 'km' && styles.langButtonTextActive]}>ខ្មែរ</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Form Section */}
           <View style={styles.formSection}>
-            <Text style={styles.formTitle}>{isLogin ? '登录' : '注册'}</Text>
+            <Text style={styles.formTitle}>{isLogin ? t('login') : t('register')}</Text>
 
             {error ? (
               <View style={styles.errorContainer}>
@@ -119,7 +139,7 @@ export default function LoginScreen() {
               <FontAwesome6 name="envelope" size={16} color="#94A3B8" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="邮箱地址"
+                placeholder={t('email_placeholder')}
                 placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={setEmail}
@@ -134,7 +154,7 @@ export default function LoginScreen() {
               <FontAwesome6 name="lock" size={16} color="#94A3B8" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="密码"
+                placeholder={t('password_placeholder')}
                 placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
@@ -155,7 +175,7 @@ export default function LoginScreen() {
                 <FontAwesome6 name="lock" size={16} color="#94A3B8" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="确认密码"
+                  placeholder={t('confirm_password_placeholder')}
                   placeholderTextColor="#94A3B8"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -174,7 +194,7 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>{isLogin ? '登录' : '注册'}</Text>
+                <Text style={styles.submitButtonText}>{isLogin ? t('login') : t('register')}</Text>
               )}
             </TouchableOpacity>
 
@@ -187,8 +207,8 @@ export default function LoginScreen() {
               }}
             >
               <Text style={styles.toggleText}>
-                {isLogin ? '还没有账号？' : '已有账号？'}
-                <Text style={styles.toggleLink}>{isLogin ? '去注册' : '去登录'}</Text>
+                {isLogin ? t('no_account') : t('has_account')}
+                <Text style={styles.toggleLink}>{isLogin ? t('go_register') : t('go_login')}</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -229,6 +249,29 @@ const styles = {
   appSubtitle: {
     fontSize: 14,
     color: '#64748B',
+  },
+  langSwitchContainer: {
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: 12,
+    marginBottom: 24,
+  },
+  langButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+  },
+  langButtonActive: {
+    backgroundColor: '#5B6AF7',
+  },
+  langButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#64748B',
+  },
+  langButtonTextActive: {
+    color: '#FFFFFF',
   },
   formSection: {
     backgroundColor: '#FFFFFF',

@@ -17,6 +17,7 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/i18n/I18nContext';
 import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
 import { createFormDataFile } from '@/utils';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -30,6 +31,7 @@ type Lang = 'zh' | 'km';
 export default function TranslateScreen() {
   const router = useSafeRouter();
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
+  const { t, language, setLanguage } = useI18n();
 
   const [sourceLang, setSourceLang] = useState<Lang>('zh');
   const [targetLang, setTargetLang] = useState<Lang>('km');
@@ -319,16 +321,24 @@ export default function TranslateScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>中柬翻译通</Text>
-            <Text style={styles.headerSubtitle}>中文 · 高棉语</Text>
+            <Text style={styles.headerTitle}>{t('translate_title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('translate_subtitle')}</Text>
             {isOffline && (
               <View style={styles.offlineBadge}>
                 <FontAwesome6 name="wifi" size={10} color="#E8604C" />
-                <Text style={styles.offlineBadgeText}>离线模式</Text>
+                <Text style={styles.offlineBadgeText}>{t('offline_mode')}</Text>
               </View>
             )}
           </View>
           <View style={styles.headerRight}>
+            {/* 界面语言切换 */}
+            <TouchableOpacity
+              style={styles.langSwitchButton}
+              onPress={() => setLanguage(language === 'zh' ? 'km' : 'zh')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.langSwitchText}>{language === 'zh' ? 'ខ្មែរ' : '中文'}</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.historyButton}
               onPress={() => router.push('/history')}
@@ -419,13 +429,13 @@ export default function TranslateScreen() {
                     color="#5B6AF7"
                   />
                   <Text style={styles.playButtonText}>
-                    {isPlaying ? '停止播放' : '播放翻译'}
+                    {isPlaying ? t('close') : t('play_translation')}
                   </Text>
                 </TouchableOpacity>
               ) : (
                 <View style={styles.ttsHint}>
                   <Text style={styles.ttsHintText}>
-                    {targetLang === 'km' ? '高棉语暂不支持语音播放' : ''}
+                    {targetLang === 'km' ? t('tts_hint') : ''}
                   </Text>
                 </View>
               )}
@@ -452,7 +462,7 @@ export default function TranslateScreen() {
           >
             <FontAwesome6 name="microphone" size={14} color={inputMode === 'voice' ? '#FFFFFF' : '#64748B'} />
             <Text style={[styles.modeButtonText, inputMode === 'voice' && styles.modeButtonTextActive]}>
-              语音输入
+              {t('voice_input')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -462,7 +472,7 @@ export default function TranslateScreen() {
           >
             <FontAwesome6 name="keyboard" size={14} color={inputMode === 'text' ? '#FFFFFF' : '#64748B'} />
             <Text style={[styles.modeButtonText, inputMode === 'text' && styles.modeButtonTextActive]}>
-              文字输入
+              {t('text_input')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -487,7 +497,7 @@ export default function TranslateScreen() {
               </TouchableOpacity>
             </Animated.View>
             <Text style={styles.recordHint}>
-              {isRecording ? '点击停止录音' : isTranslating ? '处理中...' : '点击开始录音翻译'}
+              {isRecording ? t('release_to_stop') : isTranslating ? t('loading') : t('tap_to_speak')}
             </Text>
           </View>
         ) : (
@@ -497,7 +507,7 @@ export default function TranslateScreen() {
           >
             <TextInput
               style={styles.textInput}
-              placeholder={sourceLang === 'zh' ? '请输入中文...' : 'សូមបញ្ចូលភាសាខ្មែរ...'}
+              placeholder={sourceLang === 'zh' ? t('placeholder_source') : t('placeholder_target')}
               placeholderTextColor="#94A3B8"
               value={textInput}
               onChangeText={setTextInput}
@@ -516,13 +526,13 @@ export default function TranslateScreen() {
                 {isTranslating ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.translateButtonText}>翻译</Text>
+                  <Text style={styles.translateButtonText}>{t('translate')}</Text>
                 )}
               </TouchableOpacity>
             </View>
             {sourceLang === 'km' && (
               <Text style={styles.kmHint}>
-                高棉语语音识别暂不可用，请使用文字输入
+                {t('tts_hint')}
               </Text>
             )}
           </KeyboardAvoidingView>
@@ -579,6 +589,19 @@ const styles = {
   headerRight: {
     flexDirection: 'row' as const,
     gap: 12,
+  },
+  langSwitchButton: {
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#5B6AF710',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  langSwitchText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#5B6AF7',
   },
   historyButton: {
     width: 38,
