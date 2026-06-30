@@ -70,12 +70,12 @@ router.post('/asr', upload.single('file'), async (req: Request, res: Response) =
 /**
  * POST /api/v1/translate
  * Translate text between Chinese and Khmer
- * Body: { text: string, sourceLang: 'zh' | 'km', targetLang: 'zh' | 'km', voiceGender?: 'male' | 'female' }
+ * Body: { text: string, sourceLang: 'zh' | 'km', targetLang: 'zh' | 'km', voiceGender?: 'male' | 'female', scene?: 'daily' | 'business' | 'travel' }
  * Returns: { translatedText: string, audioUrl: string, historyId: number }
  */
 router.post('/', verifyAuth, async (req: any, res: Response) => {
   try {
-    const { text, sourceLang, targetLang, voiceGender = 'female' } = req.body;
+    const { text, sourceLang, targetLang, voiceGender = 'female', scene = 'daily' } = req.body;
 
     if (!text || !sourceLang || !targetLang) {
       return res.status(400).json({ error: '缺少必要参数' });
@@ -90,10 +90,19 @@ router.post('/', verifyAuth, async (req: any, res: Response) => {
     const sourceLangName = sourceLang === 'zh' ? '中文' : '高棉语（柬埔寨语）';
     const targetLangName = targetLang === 'zh' ? '中文' : '高棉语（柬埔寨语）';
 
+    // Scene-specific translation prompts
+    const scenePrompts: Record<string, string> = {
+      daily: '翻译要通俗易懂、自然流畅，符合目标语言的日常口语表达习惯，像朋友之间的对话。',
+      business: '翻译要专业、正式、得体，符合商务场合的表达规范，用词精准，语气礼貌。',
+      travel: '翻译要简洁明了、实用性强，符合旅游场景的常用表达，如问路、点餐、购物等。',
+    };
+
+    const scenePrompt = scenePrompts[scene] || scenePrompts.daily;
+
     const messages = [
       {
         role: 'system' as const,
-        content: `你是一位专业的${sourceLangName}和${targetLangName}翻译专家。请将用户输入的${sourceLangName}文本准确翻译为${targetLangName}。翻译要通俗易懂、自然流畅，符合目标语言的日常表达习惯。只输出翻译结果，不要添加任何解释、注释或额外内容。如果输入文本已经是目标语言，则直接返回原文。`,
+        content: `你是一位专业的${sourceLangName}和${targetLangName}翻译专家，擅长${scene === 'business' ? '商务' : scene === 'travel' ? '旅游' : '日常'}场景翻译。请将用户输入的${sourceLangName}文本准确翻译为${targetLangName}。${scenePrompt}只输出翻译结果，不要添加任何解释、注释或额外内容。如果输入文本已经是目标语言，则直接返回原文。`,
       },
       {
         role: 'user' as const,

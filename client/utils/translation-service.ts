@@ -8,6 +8,8 @@ import * as Speech from 'expo-speech';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
+type Scene = 'daily' | 'business' | 'travel';
+
 /**
  * 检查网络连接
  */
@@ -33,7 +35,8 @@ export async function translateText(
   text: string,
   sourceLang: 'zh' | 'km',
   targetLang: 'zh' | 'km',
-  voiceGender: 'male' | 'female' = 'female'
+  voiceGender: 'male' | 'female' = 'female',
+  scene: Scene = 'daily'
 ): Promise<TranslationResult> {
   // 检查网络
   const isOnline = await checkNetworkConnection();
@@ -68,6 +71,7 @@ export async function translateText(
         sourceLang,
         targetLang,
         voiceGender,
+        scene,
       }),
     });
 

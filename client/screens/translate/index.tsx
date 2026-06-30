@@ -26,6 +26,13 @@ import { translateOffline } from '@/utils/offline-dictionary';
 const API_BASE = `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1`;
 
 type Lang = 'zh' | 'km';
+type Scene = 'daily' | 'business' | 'travel';
+
+const SCENE_LABELS: Record<Scene, string> = {
+  daily: '日常',
+  business: '商务',
+  travel: '旅游',
+};
 
 export default function TranslateScreen() {
   const router = useSafeRouter();
@@ -45,6 +52,7 @@ export default function TranslateScreen() {
   const [textInput, setTextInput] = useState('');
   const [isOffline, setIsOffline] = useState(false);
   const [lastTranslationOffline, setLastTranslationOffline] = useState(false);
+  const [scene, setScene] = useState<Scene>('daily');
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -195,6 +203,7 @@ export default function TranslateScreen() {
           sourceLang,
           targetLang,
           voiceGender,
+          scene,
         }),
       });
 
@@ -277,7 +286,7 @@ export default function TranslateScreen() {
       setLastTranslationOffline(false);
 
       // 使用翻译服务（支持离线）
-      const result = await translateText(textInput.trim(), sourceLang, targetLang, voiceGender);
+      const result = await translateText(textInput.trim(), sourceLang, targetLang, voiceGender, scene);
 
       setTranslatedText(result.translatedText);
       setAudioUrl(result.audioUrl || '');
@@ -374,6 +383,23 @@ export default function TranslateScreen() {
               高棉语
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Scene Selector */}
+        <View style={styles.sceneSelector}>
+          <Text style={styles.sceneLabel}>场景：</Text>
+          {(['daily', 'business', 'travel'] as Scene[]).map((s) => (
+            <TouchableOpacity
+              key={s}
+              style={[styles.sceneButton, scene === s && styles.sceneButtonActive]}
+              onPress={() => setScene(s)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.sceneButtonText, scene === s && styles.sceneButtonTextActive]}>
+                {SCENE_LABELS[s]}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Voice Gender Selector */}
@@ -660,6 +686,34 @@ const styles = {
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
     marginHorizontal: 8,
+  },
+  sceneSelector: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 12,
+    gap: 8,
+  },
+  sceneLabel: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  sceneButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F5',
+  },
+  sceneButtonActive: {
+    backgroundColor: '#5B6AF7',
+  },
+  sceneButtonText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500' as const,
+  },
+  sceneButtonTextActive: {
+    color: '#FFFFFF',
   },
   genderSelector: {
     flexDirection: 'row' as const,
