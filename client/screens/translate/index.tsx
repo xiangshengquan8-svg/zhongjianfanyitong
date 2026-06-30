@@ -668,16 +668,16 @@ const styles = {
     backgroundColor: '#5B6AF7',
   },
   langButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600' as const,
     color: '#64748B',
     textAlign: 'center' as const,
   },
   langButtonSubText: {
-    fontSize: 10,
+    fontSize: 13,
     color: '#94A3B8',
     textAlign: 'center' as const,
-    marginTop: 2,
+    marginTop: 4,
   },
   langButtonTextActive: {
     color: '#FFFFFF',
@@ -804,9 +804,12 @@ const styles = {
   recordHint: {
     marginTop: 10,
     alignItems: 'center' as const,
+    fontSize: 16,
+    color: '#475569',
+    textAlign: 'center' as const,
   },
   recordHintSub: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#94A3B8',
     textAlign: 'center' as const,
     marginTop: 2,
@@ -831,16 +834,16 @@ const styles = {
     backgroundColor: '#5B6AF7',
   },
   modeButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500' as const,
     color: '#64748B',
     textAlign: 'center' as const,
   },
   modeButtonSubText: {
-    fontSize: 9,
+    fontSize: 11,
     color: '#94A3B8',
     textAlign: 'center' as const,
-    marginTop: 1,
+    marginTop: 2,
   },
   modeButtonTextActive: {
     color: '#FFFFFF',
