@@ -472,12 +472,14 @@ export default function TranslateScreen() {
             activeOpacity={0.7}
           >
             <FontAwesome6 name="microphone" size={14} color={inputMode === 'voice' ? '#FFFFFF' : '#64748B'} />
-            <Text style={[styles.modeButtonText, inputMode === 'voice' && styles.modeButtonTextActive]}>
-              语音输入
-            </Text>
-            <Text style={[styles.modeButtonSubText, inputMode === 'voice' && styles.modeButtonTextActive]}>
-              បញ្ចូលសំឡេង
-            </Text>
+            <View>
+              <Text style={[styles.modeButtonText, inputMode === 'voice' && styles.modeButtonTextActive]}>
+                语音输入
+              </Text>
+              <Text style={[styles.modeButtonSubText, inputMode === 'voice' && styles.modeButtonTextActive]}>
+                បញ្ចូលសំឡេង
+              </Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modeButton, inputMode === 'text' && styles.modeButtonActive]}
@@ -485,12 +487,14 @@ export default function TranslateScreen() {
             activeOpacity={0.7}
           >
             <FontAwesome6 name="keyboard" size={14} color={inputMode === 'text' ? '#FFFFFF' : '#64748B'} />
-            <Text style={[styles.modeButtonText, inputMode === 'text' && styles.modeButtonTextActive]}>
-              文字输入
-            </Text>
-            <Text style={[styles.modeButtonSubText, inputMode === 'text' && styles.modeButtonTextActive]}>
-              បញ្ចូលអត្ថបទ
-            </Text>
+            <View>
+              <Text style={[styles.modeButtonText, inputMode === 'text' && styles.modeButtonTextActive]}>
+                文字输入
+              </Text>
+              <Text style={[styles.modeButtonSubText, inputMode === 'text' && styles.modeButtonTextActive]}>
+                បញ្ចូលអត្ថបទ
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
