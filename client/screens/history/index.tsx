@@ -12,6 +12,7 @@ import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
+import { useI18n } from '@/i18n/I18nContext';
 
 const API_BASE = `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1`;
 
@@ -25,9 +26,9 @@ interface TranslationItem {
   created_at: string;
 }
 
-const LANG_LABELS: Record<string, string> = {
-  zh: '中文',
-  km: '高棉语',
+const LANG_LABELS: Record<string, { zh: string; km: string }> = {
+  zh: { zh: '中文', km: 'ចិន' },
+  km: { zh: '高棉语', km: 'ខ្មែរ' },
 };
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -39,6 +40,7 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
 
 export default function HistoryScreen() {
   const router = useSafeRouter();
+  const { t, locale } = useI18n();
   const [items, setItems] = useState<TranslationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -111,10 +113,10 @@ export default function HistoryScreen() {
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert('确认删除', '确定要删除这条翻译记录吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('history_delete_title'), t('history_delete_confirm'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t('delete'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -142,9 +144,9 @@ export default function HistoryScreen() {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.langPair}>
-          <Text style={styles.langText}>{LANG_LABELS[item.source_lang] || item.source_lang}</Text>
+          <Text style={styles.langText}>{LANG_LABELS[item.source_lang]?.[locale] || item.source_lang}</Text>
           <FontAwesome6 name="arrow-right" size={10} color="#94A3B8" />
-          <Text style={styles.langText}>{LANG_LABELS[item.target_lang] || item.target_lang}</Text>
+          <Text style={styles.langText}>{LANG_LABELS[item.target_lang]?.[locale] || item.target_lang}</Text>
         </View>
         <View style={styles.cardActions}>
           <Text style={styles.timeText}>
@@ -183,7 +185,7 @@ export default function HistoryScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>翻译历史</Text>
+          <Text style={styles.headerTitle}>{t('history_title')}</Text>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <FontAwesome6 name="chevron-left" size={18} color="#5B6AF7" />
           </TouchableOpacity>
@@ -192,7 +194,7 @@ export default function HistoryScreen() {
         {items.length === 0 ? (
           <View style={styles.emptyState}>
             <FontAwesome6 name="clock-rotate-left" size={48} color="#CBD5E1" />
-            <Text style={styles.emptyText}>暂无翻译记录</Text>
+            <Text style={styles.emptyText}>{t('history_empty')}</Text>
           </View>
         ) : (
           <FlatList

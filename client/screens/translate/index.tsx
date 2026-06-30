@@ -116,7 +116,7 @@ export default function TranslateScreen() {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('权限不足', '请允许麦克风权限以使用语音翻译功能');
+        Alert.alert(t('translate_permission_title'), t('translate_permission_msg'));
         return;
       }
 
@@ -136,7 +136,7 @@ export default function TranslateScreen() {
       setHistoryId(null);
     } catch (err) {
       console.error('Start recording error:', err);
-      Alert.alert('错误', '启动录音失败');
+      Alert.alert(t('error'), t('translate_record_error'));
     }
   };
 
@@ -150,7 +150,7 @@ export default function TranslateScreen() {
 
       const uri = recordingRef.current.getURI();
       if (!uri) {
-        Alert.alert('错误', '录音文件获取失败');
+        Alert.alert(t('error'), t('translate_file_error'));
         return;
       }
 
@@ -176,7 +176,7 @@ export default function TranslateScreen() {
 
       if (!asrResponse.ok) {
         const errorData = await asrResponse.json();
-        Alert.alert('识别失败', errorData.error || '语音识别失败');
+        Alert.alert(t('translate_recognize_error'), errorData.error || t('translate_recognize_error_msg'));
         setIsTranslating(false);
         return;
       }
@@ -202,7 +202,7 @@ export default function TranslateScreen() {
 
       if (!translateResponse.ok) {
         const errorData = await translateResponse.json();
-        Alert.alert('翻译失败', errorData.error || '翻译失败');
+        Alert.alert(t('translate_fail'), errorData.error || t('translate_fail'));
         setIsTranslating(false);
         return;
       }
@@ -213,7 +213,7 @@ export default function TranslateScreen() {
       setHistoryId(translateData.historyId || null);
     } catch (err) {
       console.error('Stop recording error:', err);
-      Alert.alert('错误', '处理录音失败');
+      Alert.alert(t('error'), t('translate_process_error'));
     } finally {
       setIsTranslating(false);
       recordingRef.current = null;
@@ -244,7 +244,7 @@ export default function TranslateScreen() {
       setIsPlaying(true);
     } catch (err) {
       console.error('Play error:', err);
-      Alert.alert('播放失败', '无法播放翻译语音');
+      Alert.alert(t('translate_play_error'), t('translate_play_error_msg'));
     }
   };
 
@@ -266,7 +266,7 @@ export default function TranslateScreen() {
 
   const handleTextTranslate = async () => {
     if (!textInput.trim()) {
-      Alert.alert('提示', '请输入要翻译的文字');
+      Alert.alert(t('translate_input_hint'), t('translate_input_hint_msg'));
       return;
     }
 
@@ -296,9 +296,9 @@ export default function TranslateScreen() {
       if (offlineResult) {
         setTranslatedText(offlineResult);
         setLastTranslationOffline(true);
-        Alert.alert('离线模式', '网络不可用，已使用离线词典翻译');
+        Alert.alert(t('offline_mode'), t('translate_offline_msg'));
       } else {
-        Alert.alert('错误', '翻译失败，且离线词典无匹配');
+        Alert.alert(t('error'), t('translate_offline_no_match'));
       }
     } finally {
       setIsTranslating(false);
@@ -394,10 +394,10 @@ export default function TranslateScreen() {
               <View style={styles.resultCardHeader}>
                 <View style={[styles.langTag, { backgroundColor: '#E8604C20' }]}>
                   <Text style={[styles.langTagText, { color: '#E8604C' }]}>
-                    {sourceLang === 'zh' ? '中文' : '高棉语'}
+                    {sourceLang === 'zh' ? t('source_lang') : t('target_lang')}
                   </Text>
                 </View>
-                <Text style={styles.resultLabel}>原文</Text>
+                <Text style={styles.resultLabel}>{t('translate_original')}</Text>
               </View>
               <Text style={styles.resultText}>{sourceText}</Text>
             </View>
@@ -409,10 +409,10 @@ export default function TranslateScreen() {
               <View style={styles.resultCardHeader}>
                 <View style={[styles.langTag, { backgroundColor: '#5B6AF720' }]}>
                   <Text style={[styles.langTagText, { color: '#5B6AF7' }]}>
-                    {targetLang === 'zh' ? '中文' : '高棉语'}
+                    {targetLang === 'zh' ? t('source_lang') : t('target_lang')}
                   </Text>
                 </View>
-                <Text style={styles.resultLabel}>译文</Text>
+                <Text style={styles.resultLabel}>{t('translate_result')}</Text>
               </View>
               <Text style={styles.resultText}>{translatedText}</Text>
 

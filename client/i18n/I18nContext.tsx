@@ -6,6 +6,7 @@ const LANGUAGE_STORAGE_KEY = 'app_language';
 
 interface I18nContextType {
   language: Language;
+  locale: Language;
   setLanguage: (lang: Language) => void;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
@@ -55,7 +56,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
+    <I18nContext.Provider value={{ language, locale: language, setLanguage, t }}>
       {children}
     </I18nContext.Provider>
   );

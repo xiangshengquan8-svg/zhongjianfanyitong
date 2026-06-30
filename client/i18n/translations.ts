@@ -51,6 +51,27 @@ export const zh = {
   history_title: '翻译历史',
   history_empty: '暂无翻译记录',
   history_delete_confirm: '确定删除这条记录吗？',
+  history_delete_title: '确认删除',
+  
+  // 翻译页面提示
+  translate_translating: '正在翻译...',
+  translate_recognizing: '正在识别语音...',
+  translate_original: '原文',
+  translate_result: '译文',
+  translate_permission_title: '权限不足',
+  translate_permission_msg: '请允许麦克风权限以使用语音翻译功能',
+  translate_record_error: '启动录音失败',
+  translate_file_error: '录音文件获取失败',
+  translate_recognize_error: '识别失败',
+  translate_recognize_error_msg: '语音识别失败',
+  translate_fail: '翻译失败',
+  translate_process_error: '处理录音失败',
+  translate_play_error: '播放失败',
+  translate_play_error_msg: '无法播放翻译语音',
+  translate_input_hint: '提示',
+  translate_input_hint_msg: '请输入要翻译的文字',
+  translate_offline_msg: '网络不可用，已使用离线词典翻译',
+  translate_offline_no_match: '翻译失败，且离线词典无匹配',
   
   // 订阅页面
   subscription_title: '会员服务',
@@ -127,7 +148,28 @@ export const km = {
   // 历史页面
   history_title: 'ប្រវត្តិបកប្រែ',
   history_empty: 'មិនមានកំណត់ត្រាបកប្រែទេ',
-  history_delete_confirm: 'តើអ្នកប្រាកដជាចង់លុបកំណត់ត្រានេះ吗?',
+  history_delete_confirm: 'តើអ្នកប្រាកដជាចង់លុបកំណត់ត្រានេះ?',
+  history_delete_title: 'បញ្ជាក់ការលុប',
+  
+  // 翻译页面提示
+  translate_translating: 'កំពុងបកប្រែ...',
+  translate_recognizing: 'កំពុងស្គាល់សំឡេង...',
+  translate_original: 'អត្ថបទដើម',
+  translate_result: 'លទ្ធផលបកប្រែ',
+  translate_permission_title: 'សិទ្ធិអនុញ្ញាតមិនគ្រប់គ្រាន់',
+  translate_permission_msg: 'សូមអនុញ្ញាតសិទ្ធិមីក្រូហ្វូនដើម្បីប្រើមុខងារបកប្រែសំឡេង',
+  translate_record_error: 'កំហុសក្នុងការថត',
+  translate_file_error: 'ការទទួលបានឯកសារថតបរាជ័យ',
+  translate_recognize_error: 'ការស្គាល់សំឡេងបរាជ័យ',
+  translate_recognize_error_msg: 'ការស្គាល់សំឡេងបរាជ័យ',
+  translate_fail: 'ការបកប្រែបរាជ័យ',
+  translate_process_error: 'ការដំណើរការឯកសារថតបរាជ័យ',
+  translate_play_error: 'កំហុសក្នុងការចាក់',
+  translate_play_error_msg: 'មិនអាចចាក់សំឡេងបកប្រែបានទេ',
+  translate_input_hint: 'ព័ត៌មាន',
+  translate_input_hint_msg: 'សូមបញ្ចូលអត្ថបទដែលត្រូវបកប្រែ',
+  translate_offline_msg: 'គ្មានអ៊ីនធឺណិត បានប្រើវចនានុប្បវត្តិក្រមគ្មានអ៊ីនធឺណិត',
+  translate_offline_no_match: 'ការបកប្រែបរាជ័យ ហើយវចនានុប្បវត្តិក្រមគ្មានអ៊ីនធឺណិតមិនមានការផ្គូផ្គង',
   
   // 订阅页面
   subscription_title: 'សេវាសមាជិក',
