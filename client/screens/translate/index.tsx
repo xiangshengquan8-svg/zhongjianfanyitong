@@ -39,7 +39,6 @@ export default function TranslateScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
   const [historyId, setHistoryId] = useState<number | null>(null);
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   const [textInput, setTextInput] = useState('');
@@ -194,7 +193,7 @@ export default function TranslateScreen() {
           text: asrData.text,
           sourceLang,
           targetLang,
-          voiceGender,
+          voiceGender: 'female',
           scene: 'daily',
         }),
       });
@@ -278,7 +277,7 @@ export default function TranslateScreen() {
       setLastTranslationOffline(false);
 
       // 使用翻译服务（支持离线）
-      const result = await translateText(textInput.trim(), sourceLang, targetLang, voiceGender, 'daily');
+      const result = await translateText(textInput.trim(), sourceLang, targetLang, 'female', 'daily');
 
       setTranslatedText(result.translatedText);
       setAudioUrl(result.audioUrl || '');
@@ -373,31 +372,6 @@ export default function TranslateScreen() {
           >
             <Text style={[styles.langButtonText, sourceLang === 'km' && styles.langButtonTextActive]}>
               高棉语
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Voice Gender Selector */}
-        <View style={styles.genderSelector}>
-          <Text style={styles.genderLabel}>语音音色：</Text>
-          <TouchableOpacity
-            style={[styles.genderButton, voiceGender === 'female' && styles.genderButtonActive]}
-            onPress={() => setVoiceGender('female')}
-            activeOpacity={0.7}
-          >
-            <FontAwesome6 name="venus" size={12} color={voiceGender === 'female' ? '#FFFFFF' : '#5B6AF7'} />
-            <Text style={[styles.genderButtonText, voiceGender === 'female' && styles.genderButtonTextActive]}>
-              女声
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.genderButton, voiceGender === 'male' && styles.genderButtonActive]}
-            onPress={() => setVoiceGender('male')}
-            activeOpacity={0.7}
-          >
-            <FontAwesome6 name="mars" size={12} color={voiceGender === 'male' ? '#FFFFFF' : '#5B6AF7'} />
-            <Text style={[styles.genderButtonText, voiceGender === 'male' && styles.genderButtonTextActive]}>
-              男声
             </Text>
           </TouchableOpacity>
         </View>
@@ -668,30 +642,6 @@ const styles = {
     justifyContent: 'center' as const,
     marginBottom: 16,
     gap: 8,
-  },
-  genderLabel: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  genderButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#5B6AF710',
-  },
-  genderButtonActive: {
-    backgroundColor: '#5B6AF7',
-  },
-  genderButtonText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    color: '#5B6AF7',
-  },
-  genderButtonTextActive: {
-    color: '#FFFFFF',
   },
   resultArea: {
     flex: 1,
