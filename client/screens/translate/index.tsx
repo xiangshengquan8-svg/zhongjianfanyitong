@@ -464,65 +464,56 @@ export default function TranslateScreen() {
           )}
         </ScrollView>
 
-        {/* Input Mode Switch */}
-        <View style={styles.inputModeSwitch}>
-          <TouchableOpacity
-            style={[styles.modeButton, inputMode === 'voice' && styles.modeButtonActive]}
-            onPress={() => setInputMode('voice')}
-            activeOpacity={0.7}
-          >
-            <FontAwesome6 name="microphone" size={14} color={inputMode === 'voice' ? '#FFFFFF' : '#64748B'} />
-            <View>
-              <Text style={[styles.modeButtonText, inputMode === 'voice' && styles.modeButtonTextActive]}>
-                语音输入
-              </Text>
-              <Text style={[styles.modeButtonSubText, inputMode === 'voice' && styles.modeButtonTextActive]}>
-                បញ្ចូលសំឡេង
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.modeButton, inputMode === 'text' && styles.modeButtonActive]}
-            onPress={() => setInputMode('text')}
-            activeOpacity={0.7}
-          >
-            <FontAwesome6 name="keyboard" size={14} color={inputMode === 'text' ? '#FFFFFF' : '#64748B'} />
-            <View>
-              <Text style={[styles.modeButtonText, inputMode === 'text' && styles.modeButtonTextActive]}>
-                文字输入
-              </Text>
-              <Text style={[styles.modeButtonSubText, inputMode === 'text' && styles.modeButtonTextActive]}>
-                បញ្ចូលអត្ថបទ
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Input Area */}
+        {/* Input Area - Voice Mode */}
         {inputMode === 'voice' ? (
-          <View style={styles.recordSection}>
-            <Animated.View style={{
-              transform: [{ scale: pulseAnim }],
-            }}>
-              <TouchableOpacity
-                style={[styles.recordButton, isRecording && styles.recordButtonActive]}
-                onPress={isRecording ? stopRecording : startRecording}
-                activeOpacity={0.8}
-                disabled={isTranslating}
-              >
-                <FontAwesome6
-                  name={isRecording ? 'stop' : 'microphone'}
-                  size={28}
-                  color="#FFFFFF"
-                />
-              </TouchableOpacity>
-            </Animated.View>
-            <Text style={styles.recordHint}>
-              {isRecording ? '松开结束' : isTranslating ? '加载中...' : '点击说话'}
-            </Text>
-            <Text style={styles.recordHintSub}>
-              {isRecording ? 'លែងដើម្បីបញ្ឈប់' : isTranslating ? 'កំពុងផ្ទុក...' : 'ចុចដើម្បីនិយាយ'}
-            </Text>
+          <View style={styles.voiceInputContainer}>
+            {/* Left: Voice Input Button */}
+            <TouchableOpacity
+              style={[styles.sideModeButton, styles.modeButtonActive]}
+              onPress={() => setInputMode('voice')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome6 name="microphone" size={16} color="#FFFFFF" />
+              <Text style={styles.sideModeButtonText}>语音</Text>
+              <Text style={styles.sideModeSubText}>សំឡេង</Text>
+            </TouchableOpacity>
+
+            {/* Center: Record Button */}
+            <View style={styles.recordCenter}>
+              <Animated.View style={{
+                transform: [{ scale: pulseAnim }],
+              }}>
+                <TouchableOpacity
+                  style={[styles.recordButton, isRecording && styles.recordButtonActive]}
+                  onPress={isRecording ? stopRecording : startRecording}
+                  activeOpacity={0.8}
+                  disabled={isTranslating}
+                >
+                  <FontAwesome6
+                    name={isRecording ? 'stop' : 'microphone'}
+                    size={28}
+                    color="#FFFFFF"
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+              <Text style={styles.recordHint}>
+                {isRecording ? '松开结束' : isTranslating ? '加载中...' : '点击说话'}
+              </Text>
+              <Text style={styles.recordHintSub}>
+                {isRecording ? 'លែងដើម្បីបញ្ឈប់' : isTranslating ? 'កំពុងផ្ទុក...' : 'ចុចដើម្បីនិយាយ'}
+              </Text>
+            </View>
+
+            {/* Right: Text Input Button */}
+            <TouchableOpacity
+              style={styles.sideModeButton}
+              onPress={() => setInputMode('text')}
+              activeOpacity={0.7}
+            >
+              <FontAwesome6 name="keyboard" size={16} color="#64748B" />
+              <Text style={styles.sideModeButtonText}>文字</Text>
+              <Text style={styles.sideModeSubText}>អត្ថបទ</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <KeyboardAvoidingView
@@ -785,9 +776,49 @@ const styles = {
     fontSize: 14,
     color: '#64748B',
   },
-  recordSection: {
+  // Voice input container - horizontal layout with buttons on sides
+  voiceInputContainer: {
+    flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    paddingVertical: 20,
+    justifyContent: 'space-between' as const,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+  },
+  // Side mode buttons (voice/text) - compact vertical layout
+  sideModeButton: {
+    width: 70,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F5',
+  },
+  sideModeButtonText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  sideModeSubText: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  modeButtonActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#4F46E5',
+  },
+  modeButtonTextActive: {
+    color: '#4F46E5',
+    fontWeight: '600' as const,
+  },
+  modeSubTextActive: {
+    color: '#6366F1',
+  },
+  // Center record button area
+  recordCenter: {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   recordButton: {
     width: 72,
@@ -817,43 +848,6 @@ const styles = {
     color: '#94A3B8',
     textAlign: 'center' as const,
     marginTop: 2,
-  },
-  inputModeSwitch: {
-    flexDirection: 'row' as const,
-    backgroundColor: '#F0F0F5',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 12,
-  },
-  modeButton: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  modeButtonActive: {
-    backgroundColor: '#5B6AF7',
-  },
-  modeButtonText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: '#64748B',
-    textAlign: 'center' as const,
-  },
-  modeButtonSubText: {
-    fontSize: 11,
-    color: '#94A3B8',
-    textAlign: 'center' as const,
-    marginTop: 2,
-  },
-  modeButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  modeButtonTextActiveSub: {
-    color: '#FFFFFFCC',
   },
   textInputSection: {
     paddingBottom: 16,
