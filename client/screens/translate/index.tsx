@@ -31,7 +31,7 @@ type Lang = 'zh' | 'km';
 export default function TranslateScreen() {
   const router = useSafeRouter();
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
-  const { t, language, setLanguage } = useI18n();
+  const { t, language, setLanguage, locale } = useI18n();
 
   const [sourceLang, setSourceLang] = useState<Lang>('zh');
   const [targetLang, setTargetLang] = useState<Lang>('km');
@@ -322,7 +322,12 @@ export default function TranslateScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>{t('translate_title')}</Text>
-            <Text style={styles.headerSubtitle}>{t('translate_subtitle')}</Text>
+            <Text style={styles.headerSubtitle}>
+              {locale === 'zh' ? '中文 ⇋ 高棉文实时翻译' : 'បកប្រែភាសាចិន ⇋ ខ្មែរភ្លាមៗ'}
+            </Text>
+            <Text style={styles.headerSubtitleSecondary}>
+              {locale === 'zh' ? 'កម្មវិធីបកប្រែចិន-ខ្មែរ' : '中柬翻译通'}
+            </Text>
             {isOffline && (
               <View style={styles.offlineBadge}>
                 <FontAwesome6 name="wifi" size={10} color="#E8604C" />
@@ -569,6 +574,11 @@ const styles = {
     fontSize: 13,
     color: '#64748B',
     marginTop: 2,
+  },
+  headerSubtitleSecondary: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 1,
   },
   offlineBadge: {
     flexDirection: 'row' as const,
