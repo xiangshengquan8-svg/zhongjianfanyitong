@@ -17,6 +17,7 @@ def main():
     )
     import torch
     import evaluate
+    import numpy as np
 
     print("=" * 50)
     print("高棉语语音识别模型训练")
@@ -32,46 +33,51 @@ def main():
     print("\nLoading dataset...")
     dataset = load_from_disk("./fleurs_km_small")
     print(f"Dataset size: {len(dataset)} samples")
+    
+    # 查看数据集结构
+    print(f"Dataset features: {dataset.features}")
+    print(f"First sample keys: {dataset[0].keys()}")
 
     # 加载处理器和模型
     print("\nLoading Whisper model...")
     model_name = "openai/whisper-small"
-    processor = WhisperProcessor.from_pretrained(model_name, language="khmer", task="transcribe")
+    processor = WhisperProcessor.from_pretrained(model_name, language="Khmer", task="transcribe")
     model = WhisperForConditionalGeneration.from_pretrained(model_name)
 
     # 配置模型
     model.config.forced_decoder_ids = None
     model.config.suppress_tokens = [-1]
 
-    # 数据预处理
+    # 数据预处理 - 简化版本
     def prepare_dataset(batch):
-        audio = batch["audio"]
+        # 获取音频数据
+        audio_array = batch["audio"]["array"]
+        sampling_rate = batch["audio"]["sampling_rate"]
+        
+        # 提取特征
         batch["input_features"] = processor.feature_extractor(
-            audio["array"], 
-            sampling_rate=audio["sampling_rate"]
+            audio_array, 
+            sampling_rate=sampling_rate
         ).input_features[0]
         
-        # 获取标签
-        if "transcription" in batch:
-            text = batch["transcription"]
-        elif "text" in batch:
-            text = batch["text"]
-        else:
-            text = ""
-        
+        # 获取文本标签
+        text = batch.get("transcription", batch.get("text", ""))
         batch["labels"] = processor.tokenizer(text).input_ids
         return batch
 
     print("\nPreprocessing dataset...")
+    
+    # 转换为 16000 Hz
     dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 
-    # 取前 50 条进行快速训练测试
-    if len(dataset) > 50:
-        dataset = dataset.select(range(50))
-        print(f"Using {len(dataset)} samples for training")
+    # 取前 30 条进行快速训练测试
+    if len(dataset) > 30:
+        dataset = dataset.select(range(30))
+    print(f"Using {len(dataset)} samples for training")
 
-    # 不使用多进程，避免 Windows 问题
+    # 不使用多进程
     processed_dataset = dataset.map(prepare_dataset, num_proc=1)
+    print("Dataset preprocessed!")
 
     # 数据整理器
     data_collator = DataCollatorForSeq2Seq(
@@ -102,13 +108,12 @@ def main():
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
         learning_rate=1e-5,
-        warmup_steps=10,
-        max_steps=50,  # 快速测试，正式训练可改为 500-1000
+        warmup_steps=5,
+        max_steps=30,  # 快速测试
         gradient_checkpointing=True,
         fp16=True,
-        evaluation_strategy="steps",
-        eval_steps=25,
-        save_steps=25,
+        eval_strategy="no",
+        save_steps=15,
         logging_steps=5,
         save_total_limit=2,
         report_to="none",
@@ -120,9 +125,7 @@ def main():
         args=training_args,
         model=model,
         train_dataset=processed_dataset,
-        eval_dataset=processed_dataset,
         data_collator=data_collator,
-        compute_metrics=compute_metrics,
         processing_class=processor.feature_extractor,
     )
 
