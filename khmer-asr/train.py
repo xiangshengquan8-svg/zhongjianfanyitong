@@ -33,7 +33,7 @@ def main():
 
     # 加载数据集
     print("\nLoading dataset...")
-    dataset = load_from_disk("./fleurs_km_small")
+    dataset = load_from_disk("./fleurs_km_small3")
     print(f"Dataset size: {len(dataset)} samples")
 
     # 加载处理器和模型
