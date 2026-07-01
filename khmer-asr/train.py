@@ -34,7 +34,7 @@ def main():
 
     # 加载数据集（禁用自动音频解码）
     print("\nLoading dataset...")
-    dataset = load_from_disk("./fleurs_km_small3")
+    dataset = load_from_disk("./fleurs_km_nodecode")
     print(f"Dataset size: {len(dataset)} samples")
     print(f"Dataset features: {dataset.features}")
     
