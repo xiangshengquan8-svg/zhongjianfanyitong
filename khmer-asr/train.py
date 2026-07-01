@@ -7,7 +7,7 @@ import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 def main():
-    from datasets import load_from_disk, Audio
+    from datasets import load_from_disk
     from transformers import (
         WhisperProcessor,
         WhisperForConditionalGeneration,
@@ -18,6 +18,8 @@ def main():
     import torch
     import evaluate
     import numpy as np
+    import soundfile as sf
+    import io
 
     print("=" * 50)
     print("高棉语语音识别模型训练")
@@ -33,10 +35,6 @@ def main():
     print("\nLoading dataset...")
     dataset = load_from_disk("./fleurs_km_small")
     print(f"Dataset size: {len(dataset)} samples")
-    
-    # 查看数据集结构
-    print(f"Dataset features: {dataset.features}")
-    print(f"First sample keys: {dataset[0].keys()}")
 
     # 加载处理器和模型
     print("\nLoading Whisper model...")
@@ -48,11 +46,23 @@ def main():
     model.config.forced_decoder_ids = None
     model.config.suppress_tokens = [-1]
 
-    # 数据预处理 - 简化版本
+    # 数据预处理 - 使用 soundfile 加载音频
     def prepare_dataset(batch):
-        # 获取音频数据
-        audio_array = batch["audio"]["array"]
-        sampling_rate = batch["audio"]["sampling_rate"]
+        # 获取音频字节数据
+        audio_bytes = batch["audio"]["bytes"]
+        
+        # 使用 soundfile 加载音频
+        audio_array, sampling_rate = sf.read(io.BytesIO(audio_bytes))
+        
+        # 转换为单声道
+        if len(audio_array.shape) > 1:
+            audio_array = np.mean(audio_array, axis=1)
+        
+        # 重采样到 16000 Hz
+        if sampling_rate != 16000:
+            import librosa
+            audio_array = librosa.resample(audio_array, orig_sr=sampling_rate, target_sr=16000)
+            sampling_rate = 16000
         
         # 提取特征
         batch["input_features"] = processor.feature_extractor(
@@ -66,16 +76,13 @@ def main():
         return batch
 
     print("\nPreprocessing dataset...")
-    
-    # 转换为 16000 Hz
-    dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 
     # 取前 30 条进行快速训练测试
     if len(dataset) > 30:
         dataset = dataset.select(range(30))
     print(f"Using {len(dataset)} samples for training")
 
-    # 不使用多进程
+    # 不使用多进程，避免 Windows 问题
     processed_dataset = dataset.map(prepare_dataset, num_proc=1)
     print("Dataset preprocessed!")
 
