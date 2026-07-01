@@ -157,7 +157,7 @@ def main():
         max_steps=50,  # 快速测试
         gradient_checkpointing=True,
         fp16=True,
-        evaluation_strategy="no",
+        eval_strategy="no",
         save_strategy="steps",
         save_steps=25,
         logging_steps=5,
