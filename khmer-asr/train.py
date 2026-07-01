@@ -165,6 +165,13 @@ def main():
     processed_train = train_dataset.map(prepare_dataset, num_proc=1)
     print("Training dataset preprocessed!")
 
+    # 过滤掉标签过长的样本
+    def filter_labels(example):
+        return len(example["labels"]) <= 448
+    
+    processed_train = processed_train.filter(filter_labels)
+    print(f"After filtering long labels: {len(processed_train)} samples")
+
     # 只保留需要的列
     processed_train = processed_train.remove_columns([
         col for col in processed_train.column_names 
@@ -177,6 +184,7 @@ def main():
     if eval_dataset:
         print("\nPreprocessing eval dataset...")
         processed_eval = eval_dataset.map(prepare_dataset, num_proc=1)
+        processed_eval = processed_eval.filter(filter_labels)
         processed_eval = processed_eval.remove_columns([
             col for col in processed_eval.column_names 
             if col not in ["input_features", "labels"]
