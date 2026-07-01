@@ -180,7 +180,7 @@ def main():
         train_dataset=processed_dataset,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
-        processing_class=processor.feature_extractor,
+        tokenizer=processor,
     )
 
     # 开始训练
