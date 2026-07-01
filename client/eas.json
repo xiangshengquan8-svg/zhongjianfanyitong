@@ -1,0 +1,27 @@
+{
+  "cli": {
+    "version": ">= 15.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_BASE_URL": "https://4180cba4-12a2-47c7-9157-06c2e64e6894.dev.coze.site"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_BASE_URL": "https://4180cba4-12a2-47c7-9157-06c2e64e6894.dev.coze.site"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
