@@ -99,13 +99,8 @@ export default function TranslateScreen() {
   }, []);
 
   const getAuthHeaders = async (): Promise<Record<string, string>> => {
-    const supabase = await getSupabaseBrowserClientWithRetry();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      router.replace('/login');
-      return {};
-    }
-    return { 'x-session': session.access_token };
+    // Allow guest access - no authentication required
+    return {};
   };
 
   const startRecording = async () => {
@@ -166,7 +161,9 @@ export default function TranslateScreen() {
       });
 
       if (asrResponse.status === 401) {
-        router.replace('/login');
+        // Allow guest access - show error but don't redirect
+        Alert.alert(t('translate_error'), t('translate_service_unavailable'));
+        setIsTranslating(false);
         return;
       }
 
@@ -347,16 +344,7 @@ export default function TranslateScreen() {
             >
               <FontAwesome6 name="clock-rotate-left" size={18} color="#5B6AF7" />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={async () => {
-                await signOut();
-                router.replace('/login');
-              }}
-              activeOpacity={0.7}
-            >
-              <FontAwesome6 name="right-from-bracket" size={16} color="#64748B" />
-            </TouchableOpacity>
+            {/* Logout button removed - guest access mode */}
           </View>
         </View>
 
