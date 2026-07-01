@@ -8,19 +8,20 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 os.environ["DATASETS_FEATURES_AUDIO_BACKEND"] = "soundfile"
 
 def main():
-    from datasets import load_from_disk, Dataset
+    from datasets import load_from_disk
     from transformers import (
         WhisperProcessor,
         WhisperForConditionalGeneration,
         Seq2SeqTrainingArguments,
         Seq2SeqTrainer,
-        DataCollatorForSeq2Seq,
     )
+    from transformers.models.whisper.english_normalizer import BasicTextNormalizer
     import torch
-    import evaluate
     import numpy as np
     import soundfile as sf
     import io
+    from dataclasses import dataclass
+    from typing import Any, Dict, List, Union
 
     print("=" * 50)
     print("高棉语语音识别模型训练")
@@ -36,19 +37,7 @@ def main():
     print("\nLoading dataset...")
     dataset = load_from_disk("./fleurs_km_nodecode")
     print(f"Dataset size: {len(dataset)} samples")
-    print(f"Dataset features: {dataset.features}")
     
-    # 检查数据集列
-    print(f"Columns: {dataset.column_names}")
-    
-    # 查看第一个样本的结构
-    first_item = dataset[0]
-    print(f"First sample keys: {first_item.keys()}")
-    if 'audio' in first_item:
-        print(f"Audio type: {type(first_item['audio'])}")
-        if isinstance(first_item['audio'], dict):
-            print(f"Audio keys: {first_item['audio'].keys()}")
-
     # 加载处理器和模型
     print("\nLoading Whisper model...")
     model_name = "openai/whisper-small"
@@ -58,6 +47,41 @@ def main():
     # 配置模型
     model.config.forced_decoder_ids = None
     model.config.suppress_tokens = [-1]
+
+    # 自定义数据整理器
+    @dataclass
+    class DataCollatorSpeechSeq2SeqWithPadding:
+        processor: Any
+        
+        def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
+            # 分离 input_features 和 labels
+            input_features = [{"input_features": feature["input_features"]} for feature in features]
+            label_features = [{"input_ids": feature["labels"]} for feature in features]
+            
+            # 对 input_features 进行 padding
+            batch = self.processor.feature_extractor.pad(
+                input_features, 
+                return_tensors="pt"
+            )
+            
+            # 对 labels 进行 padding
+            labels_batch = self.processor.tokenizer.pad(
+                label_features, 
+                return_tensors="pt"
+            )
+            
+            # 获取 labels
+            labels = labels_batch["input_ids"].masked_fill(
+                labels_batch.attention_mask.ne(1), 
+                -100
+            )
+            
+            # 如果第一个 token 是 BOS，移除它
+            if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():
+                labels = labels[:, 1:]
+            
+            batch["labels"] = labels
+            return batch
 
     # 数据预处理 - 手动处理音频
     def prepare_dataset(batch):
@@ -124,28 +148,15 @@ def main():
     processed_dataset = dataset.map(prepare_dataset, num_proc=1)
     print("Dataset preprocessed!")
 
+    # 只保留需要的列
+    processed_dataset = processed_dataset.remove_columns([
+        col for col in processed_dataset.column_names 
+        if col not in ["input_features", "labels"]
+    ])
+    print(f"Final dataset columns: {processed_dataset.column_names}")
+
     # 数据整理器
-    data_collator = DataCollatorForSeq2Seq(
-        processor.tokenizer,
-        model=model,
-        padding=True
-    )
-
-    # 评估指标
-    metric = evaluate.load("wer")
-
-    def compute_metrics(pred):
-        pred_ids = pred.predictions
-        label_ids = pred.label_ids
-
-        # 替换 -100 为 pad token id
-        label_ids[label_ids == -100] = processor.tokenizer.pad_token_id
-
-        pred_str = processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
-        label_str = processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True)
-
-        wer = metric.compute(predictions=pred_str, references=label_str)
-        return {"wer": wer}
+    data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
     # 训练参数
     training_args = Seq2SeqTrainingArguments(
@@ -166,20 +177,12 @@ def main():
         load_best_model_at_end=False,
     )
 
-    # 移除不需要的列（保留 input_features 和 labels）
-    print("移除不需要的列...")
-    columns_to_remove = [col for col in processed_dataset.column_names if col not in ["input_features", "labels"]]
-    if columns_to_remove:
-        processed_dataset = processed_dataset.remove_columns(columns_to_remove)
-    print(f"最终数据集列: {processed_dataset.column_names}")
-    
     # 创建训练器
     trainer = Seq2SeqTrainer(
         args=training_args,
         model=model,
         train_dataset=processed_dataset,
         data_collator=data_collator,
-        compute_metrics=compute_metrics,
         tokenizer=processor,
     )
 
@@ -197,9 +200,7 @@ def main():
 
     print("\n" + "=" * 50)
     print("训练完成！")
-    print("模型保存在: ./khmer-whisper-small-finetuned")
     print("=" * 50)
-
 
 if __name__ == "__main__":
     main()
