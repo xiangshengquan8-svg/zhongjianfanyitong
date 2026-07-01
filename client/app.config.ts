@@ -73,7 +73,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           "microphonePermission": `语音翻译通App需要使用麦克风进行语音录音翻译。`
         }
-      ]
+      ],
+      "@react-native-voice/voice"
     ],
     "experiments": {
       "typedRoutes": true
