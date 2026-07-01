@@ -19,8 +19,14 @@ const SupabaseConfigContext = createContext<SupabaseConfigContextType>({
 
 export const SUPABASE_CONFIG_READY_EVENT = 'supabase-config-ready';
 
+// 直接嵌入 Supabase 配置，不依赖后端
+const EMBEDDED_SUPABASE_CONFIG: SupabaseConfig = {
+  url: 'https://br-happy-oryx-05747dcd.supabase2.aidap-global.cn-beijing.volces.com',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjMzNjMyNDY0ODksInJvbGUiOiJhbm9uIn0.dc1Wg3s9WsxmwinjQG1DjOAybC6HRHXPzn9bbtAl8Ck',
+};
+
 // Module-level config storage for RN environment
-let moduleConfig: SupabaseConfig | null = null;
+let moduleConfig: SupabaseConfig | null = EMBEDDED_SUPABASE_CONFIG;
 
 export function getModuleConfig(): SupabaseConfig | null {
   return moduleConfig;
@@ -35,37 +41,20 @@ interface SupabaseConfigProviderProps {
 }
 
 export function SupabaseConfigProvider({ children }: SupabaseConfigProviderProps) {
-  const [config, setConfig] = useState<SupabaseConfig | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [config, setConfig] = useState<SupabaseConfig | null>(EMBEDDED_SUPABASE_CONFIG);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const apiUrl = `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/supabase-config`;
-    fetch(apiUrl)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (data.url && data.anonKey) {
-          setConfig(data);
-          moduleConfig = data;
-          // Dispatch custom event for non-React consumers
-          if (typeof window !== 'undefined') {
-            (window as any).__SUPABASE_CONFIG__ = data;
-            window.dispatchEvent(new CustomEvent(SUPABASE_CONFIG_READY_EVENT, { detail: data }));
-          }
-        } else {
-          throw new Error('Invalid config response');
-        }
-      })
-      .catch((err) => {
-        setError(err.message);
-        console.error('Failed to load Supabase config:', err);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    // 直接使用嵌入的配置，不需要从后端获取
+    moduleConfig = EMBEDDED_SUPABASE_CONFIG;
+    setConfig(EMBEDDED_SUPABASE_CONFIG);
+    
+    // Dispatch custom event for non-React consumers
+    if (typeof window !== 'undefined') {
+      (window as any).__SUPABASE_CONFIG__ = EMBEDDED_SUPABASE_CONFIG;
+      window.dispatchEvent(new CustomEvent(SUPABASE_CONFIG_READY_EVENT, { detail: EMBEDDED_SUPABASE_CONFIG }));
+    }
   }, []);
 
   return (
