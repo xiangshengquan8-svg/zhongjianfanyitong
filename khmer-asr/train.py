@@ -166,6 +166,11 @@ def main():
         load_best_model_at_end=False,
     )
 
+    # 移除不需要的列
+    print("移除不需要的列...")
+    processed_dataset = processed_dataset.remove_columns(["audio", "transcription"])
+    print(f"最终数据集列: {processed_dataset.column_names}")
+    
     # 创建训练器
     trainer = Seq2SeqTrainer(
         args=training_args,
