@@ -183,7 +183,7 @@ def main():
         model=model,
         train_dataset=processed_dataset,
         data_collator=data_collator,
-        tokenizer=processor,
+        processing_class=processor,
     )
 
     # 开始训练
