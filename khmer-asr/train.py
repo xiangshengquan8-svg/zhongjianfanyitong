@@ -166,9 +166,11 @@ def main():
         load_best_model_at_end=False,
     )
 
-    # 移除不需要的列
+    # 移除不需要的列（保留 input_features 和 labels）
     print("移除不需要的列...")
-    processed_dataset = processed_dataset.remove_columns(["audio", "transcription"])
+    columns_to_remove = [col for col in processed_dataset.column_names if col not in ["input_features", "labels"]]
+    if columns_to_remove:
+        processed_dataset = processed_dataset.remove_columns(columns_to_remove)
     print(f"最终数据集列: {processed_dataset.column_names}")
     
     # 创建训练器
