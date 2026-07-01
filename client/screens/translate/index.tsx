@@ -67,12 +67,8 @@ export default function TranslateScreen() {
     return () => unsubscribe();
   }, []);
 
-  // Auth check
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [authLoading, isAuthenticated]);
+  // Auth check - allow guest access
+  // User can use the app without logging in
 
   // Pulse animation for recording
   useEffect(() => {
