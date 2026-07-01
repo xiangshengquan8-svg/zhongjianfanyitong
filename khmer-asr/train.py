@@ -33,10 +33,22 @@ def main():
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
 
-    # 加载数据集（禁用自动音频解码）
-    print("\nLoading dataset...")
-    dataset = load_from_disk("./fleurs_km_nodecode")
-    print(f"Dataset size: {len(dataset)} samples")
+    # 加载完整数据集（禁用自动音频解码）
+    print("\nLoading full dataset...")
+    dataset_dict = load_from_disk("./fleurs_km_full")
+    print(f"Dataset loaded: {dataset_dict}")
+    
+    # 获取训练集和验证集
+    if hasattr(dataset_dict, 'keys'):
+        train_dataset = dataset_dict.get('train', dataset_dict)
+        eval_dataset = dataset_dict.get('validation', None)
+    else:
+        train_dataset = dataset_dict
+        eval_dataset = None
+    
+    print(f"Train samples: {len(train_dataset)}")
+    if eval_dataset:
+        print(f"Eval samples: {len(eval_dataset)}")
     
     # 加载处理器和模型
     print("\nLoading Whisper model...")
@@ -137,69 +149,84 @@ def main():
             batch["labels"] = processor.tokenizer(text).input_ids
             return batch
 
-    print("\nPreprocessing dataset...")
+    print("\nPreprocessing training dataset...")
 
-    # 取前 30 条进行快速训练测试
-    if len(dataset) > 30:
-        dataset = dataset.select(range(30))
-    print(f"Using {len(dataset)} samples for training")
+    # 使用完整数据集进行训练
+    print(f"Using {len(train_dataset)} samples for training")
 
     # 不使用多进程，避免 Windows 问题
-    processed_dataset = dataset.map(prepare_dataset, num_proc=1)
-    print("Dataset preprocessed!")
+    processed_train = train_dataset.map(prepare_dataset, num_proc=1)
+    print("Training dataset preprocessed!")
 
     # 只保留需要的列
-    processed_dataset = processed_dataset.remove_columns([
-        col for col in processed_dataset.column_names 
+    processed_train = processed_train.remove_columns([
+        col for col in processed_train.column_names 
         if col not in ["input_features", "labels"]
     ])
-    print(f"Final dataset columns: {processed_dataset.column_names}")
+    print(f"Final train columns: {processed_train.column_names}")
+    
+    # 处理验证集
+    processed_eval = None
+    if eval_dataset:
+        print("\nPreprocessing eval dataset...")
+        processed_eval = eval_dataset.map(prepare_dataset, num_proc=1)
+        processed_eval = processed_eval.remove_columns([
+            col for col in processed_eval.column_names 
+            if col not in ["input_features", "labels"]
+        ])
+        print(f"Eval dataset preprocessed: {len(processed_eval)} samples")
 
     # 数据整理器
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
-    # 训练参数
+    # 训练参数（正式训练）
     training_args = Seq2SeqTrainingArguments(
-        output_dir="./khmer-whisper-small",
+        output_dir="./khmer-whisper-full",
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
         learning_rate=1e-5,
-        warmup_steps=10,
-        max_steps=50,  # 快速测试
+        warmup_steps=100,
+        max_steps=3000,  # 正式训练 3000 步
         gradient_checkpointing=True,
         fp16=True,
-        eval_strategy="no",
+        eval_strategy="steps" if processed_eval else "no",
+        eval_steps=500 if processed_eval else None,
         save_strategy="steps",
-        save_steps=25,
-        logging_steps=5,
+        save_steps=500,
+        logging_steps=50,
         remove_unused_columns=False,
         report_to="none",
-        load_best_model_at_end=False,
+        load_best_model_at_end=True if processed_eval else False,
+        metric_for_best_model="loss" if processed_eval else None,
+        greater_is_better=False if processed_eval else None,
     )
 
     # 创建训练器
     trainer = Seq2SeqTrainer(
         args=training_args,
         model=model,
-        train_dataset=processed_dataset,
+        train_dataset=processed_train,
+        eval_dataset=processed_eval,
         data_collator=data_collator,
         processing_class=processor,
     )
 
     # 开始训练
     print("\n" + "=" * 50)
-    print("开始训练...")
+    print("开始正式训练（3000 步）...")
+    print("预计时间：10-20 小时")
     print("=" * 50)
     
     trainer.train()
 
     # 保存模型
     print("\n保存模型...")
-    model.save_pretrained("./khmer-whisper-small-finetuned")
-    processor.save_pretrained("./khmer-whisper-small-finetuned")
+    model.save_pretrained("./khmer-whisper-full-finetuned")
+    processor.save_pretrained("./khmer-whisper-full-finetuned")
 
     print("\n" + "=" * 50)
     print("训练完成！")
+    print("模型保存在: ./khmer-whisper-full-finetuned")
     print("=" * 50)
 
 if __name__ == "__main__":
