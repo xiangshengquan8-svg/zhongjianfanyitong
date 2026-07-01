@@ -69,9 +69,15 @@ export default function LoginScreen() {
     const { error } = await signUpWithEmail(email.trim(), password);
     setLoading(false);
     if (error) {
-      setError(error.includes('already') 
+      // 显示详细错误信息用于调试
+      const errorMsg = error.includes('already') 
         ? (language === 'zh' ? '该邮箱已注册' : 'អ៊ីមែលនេះបានចុះឈ្មោះរួចហើយ') 
-        : (language === 'zh' ? '注册失败，请重试' : 'ការចុះឈ្មោះបរាជ័យ សូមព្យាយាមម្តងទៀត'));
+        : error.includes('Supabase not initialized')
+        ? (language === 'zh' ? '服务未就绪，请稍后重试' : 'សេវាកម្មមិនទាន់រួចរាល់')
+        : error.includes('Network')
+        ? (language === 'zh' ? '网络连接失败，请检查网络' : 'ការតភ្ជាប់បណ្ដាញបរាជ័យ')
+        : `${language === 'zh' ? '注册失败' : 'ការចុះឈ្មោះបរាជ័យ'}: ${error}`;
+      setError(errorMsg);
     }
   };
 
