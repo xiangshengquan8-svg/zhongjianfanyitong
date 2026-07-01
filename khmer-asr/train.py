@@ -139,14 +139,21 @@ def main():
             
             # 获取文本标签
             text = batch.get("transcription", batch.get("text", ""))
-            batch["labels"] = processor.tokenizer(text).input_ids
+            labels = processor.tokenizer(text).input_ids
+            # 截断过长的标签（Whisper 最大 448）
+            if len(labels) > 448:
+                labels = labels[:448]
+            batch["labels"] = labels
             return batch
         except Exception as e:
             print(f"Error processing sample: {e}")
             # 返回空特征
             batch["input_features"] = np.zeros((80, 3000), dtype=np.float32)
             text = batch.get("transcription", batch.get("text", ""))
-            batch["labels"] = processor.tokenizer(text).input_ids
+            labels = processor.tokenizer(text).input_ids
+            if len(labels) > 448:
+                labels = labels[:448]
+            batch["labels"] = labels
             return batch
 
     print("\nPreprocessing training dataset...")
